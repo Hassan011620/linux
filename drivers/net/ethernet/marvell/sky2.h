@@ -268,6 +268,9 @@ enum csr_regs {
 	B0_Y2_SP_EISR	= 0x0024,
 	B0_Y2_SP_LISR	= 0x0028,
 	B0_Y2_SP_ICR	= 0x002c,
+#ifdef CONFIG_X86_PS4
+	AEOLIA_SP_ICR	= 0x0068,
+#endif
 
 	B2_MAC_1	= 0x0100,
 	B2_MAC_2	= 0x0108,
