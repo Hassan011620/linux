@@ -1,0 +1,278 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+#include <linux/module.h>
+#include <linux/platform_device.h>
+#include <linux/hwmon.h>
+#include <linux/mutex.h>
+#include <linux/slab.h>
+#include <linux/err.h>
+#include "aeolia.h"
+#include "ps4-fan.h"
+
+struct ps4_fan_priv {
+	struct mutex lock;
+};
+
+static int icc_read_apu_temp(long *temp_mc)
+{
+	u8 reply[PS4_FAN_TEMP_REPLY_LEN];
+	int ret;
+
+	memset(reply, 0, sizeof(reply));
+	ret = apcie_icc_cmd(PS4_FAN_TEMP_ICC_MAJOR, PS4_FAN_TEMP_ICC_MINOR,
+			    NULL, 0, reply, sizeof(reply));
+	if (ret < 0)
+		return ret;
+	if (reply[PS4_ICC_STATUS_BYTE] != 0x00)
+		return -EIO;
+
+	*temp_mc = (long)reply[PS4_FAN_TEMP_BYTE] * 1000L;
+	return 0;
+}
+
+static int icc_read_fan_threshold(long *thresh_mc)
+{
+	u8 reply[PS4_FAN_CONFIG_REPLY_LEN];
+	int ret;
+
+	memset(reply, 0, sizeof(reply));
+	ret = apcie_icc_cmd(PS4_FAN_ICC_MAJOR, PS4_FAN_ICC_MINOR_GET,
+			    NULL, 0, reply, sizeof(reply));
+	if (ret < 0)
+		return ret;
+	if (reply[PS4_ICC_STATUS_BYTE] != 0x00)
+		return -EIO;
+	if (reply[PS4_FAN_THRESH_BYTE] < PS4_FAN_THRESH_MIN_C ||
+	    reply[PS4_FAN_THRESH_BYTE] > PS4_FAN_THRESH_MAX_C)
+		return -ERANGE;
+
+	*thresh_mc = (long)reply[PS4_FAN_THRESH_BYTE] * 1000L;
+	return 0;
+}
+
+static int icc_write_fan_threshold(long thresh_mc)
+{
+	u8 config[PS4_FAN_CONFIG_REPLY_LEN];
+	u8 reply[0x20];
+	u8 thresh_c;
+	int ret;
+
+	if (thresh_mc < PS4_FAN_THRESH_MIN_MC ||
+	    thresh_mc > PS4_FAN_THRESH_MAX_MC)
+		return -EINVAL;
+
+	thresh_c = (u8)(thresh_mc / 1000L);
+
+	memset(config, 0, sizeof(config));
+	ret = apcie_icc_cmd(PS4_FAN_ICC_MAJOR, PS4_FAN_ICC_MINOR_GET,
+			    NULL, 0, config, sizeof(config));
+	if (ret < 0)
+		return ret;
+	if (config[PS4_ICC_STATUS_BYTE] != 0x00)
+		return -EIO;
+
+	config[PS4_FAN_THRESH_BYTE] = thresh_c;
+
+	memset(reply, 0, sizeof(reply));
+	ret = apcie_icc_cmd(PS4_FAN_ICC_MAJOR, PS4_FAN_ICC_MINOR_SET,
+			    config, PS4_FAN_CONFIG_LEN,
+			    reply, sizeof(reply));
+	if (ret < 0)
+		return ret;
+	if (reply[PS4_ICC_STATUS_BYTE] != 0x00)
+		return -EIO;
+
+	return 0;
+}
+
+static int icc_read_fan_rpm(long *rpm)
+{
+	u8 reply[PS4_FAN_STATUS_REPLY_LEN];
+	u32 raw;
+	int ret;
+
+	memset(reply, 0, sizeof(reply));
+	ret = apcie_icc_cmd(PS4_FAN_ICC_MAJOR, PS4_FAN_ICC_MINOR_STATUS,
+			    NULL, 0, reply, sizeof(reply));
+	if (ret < 0)
+		return ret;
+	if (reply[PS4_ICC_STATUS_BYTE] != 0x00)
+		return -EIO;
+
+	raw = le32_to_cpup((__le32 *)(reply + PS4_FAN_RPM_OFFSET));
+
+	if (raw == PS4_FAN_RPM_INVALID_1 || raw == PS4_FAN_RPM_INVALID_2)
+		*rpm = 0;
+	else
+		*rpm = (long)(raw / PS4_FAN_RPM_SCALE);
+
+	return 0;
+}
+
+static umode_t ps4_fan_is_visible(const void *drvdata,
+				   enum hwmon_sensor_types type,
+				   u32 attr, int channel)
+{
+	switch (type) {
+	case hwmon_temp:
+		if (channel != 0)
+			return 0;
+		switch (attr) {
+		case hwmon_temp_input: return 0444;
+		case hwmon_temp_crit:  return 0644;
+		default:               return 0;
+		}
+	case hwmon_fan:
+		if (channel != 0)
+			return 0;
+		if (attr == hwmon_fan_input)
+			return 0444;
+		return 0;
+	default:
+		return 0;
+	}
+}
+
+static int ps4_fan_read(struct device *dev, enum hwmon_sensor_types type,
+			u32 attr, int channel, long *val)
+{
+	struct ps4_fan_priv *priv = dev_get_drvdata(dev);
+	int ret;
+
+	mutex_lock(&priv->lock);
+
+	switch (type) {
+	case hwmon_temp:
+		if (channel != 0) { ret = -EOPNOTSUPP; break; }
+		switch (attr) {
+		case hwmon_temp_input:
+			ret = icc_read_apu_temp(val);
+			break;
+		case hwmon_temp_crit:
+			ret = icc_read_fan_threshold(val);
+			break;
+		default:
+			ret = -EOPNOTSUPP;
+		}
+		break;
+	case hwmon_fan:
+		if (channel != 0 || attr != hwmon_fan_input) {
+			ret = -EOPNOTSUPP;
+			break;
+		}
+		ret = icc_read_fan_rpm(val);
+		break;
+	default:
+		ret = -EOPNOTSUPP;
+	}
+
+	mutex_unlock(&priv->lock);
+	return ret;
+}
+
+static int ps4_fan_write(struct device *dev, enum hwmon_sensor_types type,
+			 u32 attr, int channel, long val)
+{
+	struct ps4_fan_priv *priv = dev_get_drvdata(dev);
+	int ret;
+
+	if (type != hwmon_temp || channel != 0 || attr != hwmon_temp_crit)
+		return -EOPNOTSUPP;
+
+	mutex_lock(&priv->lock);
+	ret = icc_write_fan_threshold(val);
+	mutex_unlock(&priv->lock);
+
+	return ret;
+}
+
+static const struct hwmon_channel_info * const ps4_fan_channel_info[] = {
+	HWMON_CHANNEL_INFO(temp,
+		HWMON_T_INPUT | HWMON_T_CRIT),
+	HWMON_CHANNEL_INFO(fan,
+		HWMON_F_INPUT),
+	NULL,
+};
+
+static const struct hwmon_ops ps4_fan_hwmon_ops = {
+	.is_visible = ps4_fan_is_visible,
+	.read       = ps4_fan_read,
+	.write      = ps4_fan_write,
+};
+
+static const struct hwmon_chip_info ps4_fan_chip_info = {
+	.ops  = &ps4_fan_hwmon_ops,
+	.info = ps4_fan_channel_info,
+};
+
+static int ps4_fan_probe(struct platform_device *pdev)
+{
+	struct ps4_fan_priv *priv;
+	struct device *hwmon_dev;
+
+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+
+	mutex_init(&priv->lock);
+	platform_set_drvdata(pdev, priv);
+
+	hwmon_dev = devm_hwmon_device_register_with_info(
+			&pdev->dev, "ps4_fan", priv,
+			&ps4_fan_chip_info, NULL);
+	if (IS_ERR(hwmon_dev))
+		return PTR_ERR(hwmon_dev);
+
+	dev_info(&pdev->dev,
+		 "PS4 fan hwmon ready — "
+		 "temp1_input, temp1_crit (%d–%d°C), fan1_input\n",
+		 PS4_FAN_THRESH_MIN_C, PS4_FAN_THRESH_MAX_C);
+	return 0;
+}
+
+static void ps4_fan_remove(struct platform_device *pdev) {}
+
+static struct platform_driver ps4_fan_driver = {
+	.probe  = ps4_fan_probe,
+	.remove = ps4_fan_remove,
+	.driver = { .name = "ps4-fan" },
+};
+
+static struct platform_device *ps4_fan_pdev;
+
+static int __init ps4_fan_init(void)
+{
+	int ret;
+
+	ret = platform_driver_register(&ps4_fan_driver);
+	if (ret) {
+		pr_err("ps4-fan: failed to register driver: %d\n", ret);
+		return ret;
+	}
+
+	ps4_fan_pdev = platform_device_register_simple("ps4-fan", -1, NULL, 0);
+	if (IS_ERR(ps4_fan_pdev)) {
+		ret = PTR_ERR(ps4_fan_pdev);
+		pr_err("ps4-fan: failed to register device: %d\n", ret);
+		platform_driver_unregister(&ps4_fan_driver);
+		ps4_fan_pdev = NULL;
+		return ret;
+	}
+
+	return 0;
+}
+
+static void __exit ps4_fan_exit(void)
+{
+	if (ps4_fan_pdev)
+		platform_device_unregister(ps4_fan_pdev);
+	platform_driver_unregister(&ps4_fan_driver);
+}
+
+module_init(ps4_fan_init);
+module_exit(ps4_fan_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("rmux <armandas.kvietkus@proton.me>");
+MODULE_DESCRIPTION("PS4 Aeolia/Belize fan threshold and RPM hwmon driver");
+MODULE_ALIAS("platform:ps4-fan");
