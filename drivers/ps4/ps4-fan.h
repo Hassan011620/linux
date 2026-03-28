@@ -26,7 +26,7 @@
 #define PS4_FAN_RPM_INVALID_1           0xFFFFFFFFU
 #define PS4_FAN_RPM_INVALID_2           0x0FFFFFFFU
 
-#define PS4_FAN_THRESH_MIN_C            45
+#define PS4_FAN_THRESH_MIN_C            20
 #define PS4_FAN_THRESH_MAX_C            85
 #define PS4_FAN_THRESH_DEFAULT_C        79
 
