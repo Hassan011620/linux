@@ -47,6 +47,7 @@
 #define FIRMWARE_KAVERI	"amdgpu/kaveri_vce.bin"
 #define FIRMWARE_HAWAII	"amdgpu/hawaii_vce.bin"
 #define FIRMWARE_MULLINS	"amdgpu/mullins_vce.bin"
+#define FIRMWARE_LIVERPOOL	"amdgpu/liverpool_vce.bin"
 #endif
 #define FIRMWARE_TONGA		"amdgpu/tonga_vce.bin"
 #define FIRMWARE_CARRIZO	"amdgpu/carrizo_vce.bin"
@@ -67,6 +68,7 @@ MODULE_FIRMWARE(FIRMWARE_KABINI);
 MODULE_FIRMWARE(FIRMWARE_KAVERI);
 MODULE_FIRMWARE(FIRMWARE_HAWAII);
 MODULE_FIRMWARE(FIRMWARE_MULLINS);
+MODULE_FIRMWARE(FIRMWARE_LIVERPOOL);
 #endif
 MODULE_FIRMWARE(FIRMWARE_TONGA);
 MODULE_FIRMWARE(FIRMWARE_CARRIZO);
@@ -119,6 +121,9 @@ int amdgpu_vce_sw_init(struct amdgpu_device *adev, unsigned long size)
 	case CHIP_MULLINS:
 		fw_name = FIRMWARE_MULLINS;
 		break;
+	case CHIP_LIVERPOOL:
+		fw_name = FIRMWARE_LIVERPOOL;
+		break;
 #endif
 	case CHIP_TONGA:
 		fw_name = FIRMWARE_TONGA;
@@ -158,6 +163,8 @@ int amdgpu_vce_sw_init(struct amdgpu_device *adev, unsigned long size)
 		return -EINVAL;
 	}
 
+	DRM_INFO("VCE firmware: %s\n", fw_name);
+
 	r = amdgpu_ucode_request(adev, &adev->vce.fw, AMDGPU_UCODE_REQUIRED, "%s", fw_name);
 	if (r) {
 		dev_err(adev->dev, "amdgpu_vce: Can't validate firmware \"%s\"\n",
@@ -178,14 +185,16 @@ int amdgpu_vce_sw_init(struct amdgpu_device *adev, unsigned long size)
 				(binary_id << 8));
 
 	r = amdgpu_bo_create_kernel(adev, size, PAGE_SIZE,
-				    AMDGPU_GEM_DOMAIN_VRAM |
-				    AMDGPU_GEM_DOMAIN_GTT,
+				    AMDGPU_GEM_DOMAIN_VRAM,
 				    &adev->vce.vcpu_bo,
 				    &adev->vce.gpu_addr, &adev->vce.cpu_addr);
 	if (r) {
 		dev_err(adev->dev, "(%d) failed to allocate VCE bo\n", r);
 		return r;
 	}
+
+	DRM_INFO("VCE vcpu_bo gpu_addr=0x%016llx wb gpu_addr=0x%016llx\n",
+		 adev->vce.gpu_addr, adev->wb.gpu_addr);
 
 	for (i = 0; i < AMDGPU_MAX_VCE_HANDLES; ++i) {
 		atomic_set(&adev->vce.handles[i], 0);
@@ -464,6 +473,9 @@ static int amdgpu_vce_get_create_msg(struct amdgpu_ring *ring, uint32_t handle,
 	ib = &job->ibs[0];
 	/* let addr point to page boundary */
 	addr = AMDGPU_GPU_PAGE_ALIGN(ib_msg.gpu_addr);
+
+	DRM_INFO("VCE create msg feedback gpu_addr=0x%016llx raw_ib_msg=0x%016llx ring fence addr=0x%016llx\n",
+		 addr, ib_msg.gpu_addr, ring->fence_drv.gpu_addr);
 
 	/* stitch together an VCE create msg */
 	ib->length_dw = 0;
@@ -870,6 +882,7 @@ int amdgpu_vce_ring_parse_cs(struct amdgpu_cs_parser *p,
 #ifdef CONFIG_DRM_AMDGPU_CIK
 			case CHIP_KAVERI:
 			case CHIP_MULLINS:
+			/* case CHIP_LIVERPOOL: */ /* Maybe Liverpool and Gladius don't need this HW config */
 #endif
 			case CHIP_CARRIZO:
 				break;
@@ -1147,6 +1160,10 @@ int amdgpu_vce_ring_test_ib(struct amdgpu_ring *ring, long timeout)
 {
 	struct dma_fence *fence = NULL;
 	long r;
+
+	DRM_INFO("VCE ring test: ring fence addr=0x%016llx vcpu_bo=0x%016llx wb gpu_addr=0x%016llx\n",
+		 ring->fence_drv.gpu_addr, ring->adev->vce.gpu_addr,
+		 ring->adev->wb.gpu_addr);
 
 	/* skip vce ring1/2 ib test for now, since it's not reliable */
 	if (ring != &ring->adev->vce.ring[0])

@@ -30,6 +30,13 @@
 #define AMDGPU_UVD_HEAP_SIZE		(256*1024)
 #define AMDGPU_UVD_SESSION_SIZE		(50*1024)
 #define AMDGPU_UVD_FIRMWARE_OFFSET	256
+/*
+ * Liverpool/Gladius traces reserve a larger legacy VCPU layout than the
+ * stock UVD4.2 firmware + heap + stack/session sizing used elsewhere.
+ */
+#define AMDGPU_UVD_LEGACY_VCPU_CACHE_SIZE0	0x7d000
+#define AMDGPU_UVD_LEGACY_VCPU_CACHE_SIZE1	0x40000
+#define AMDGPU_UVD_LEGACY_VCPU_CACHE_SIZE2	0x120800
 
 #define AMDGPU_MAX_UVD_INSTANCES			2
 

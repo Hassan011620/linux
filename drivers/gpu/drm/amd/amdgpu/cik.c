@@ -2690,8 +2690,9 @@ int cik_set_ip_blocks(struct amdgpu_device *adev)
 			amdgpu_device_ip_block_add(adev, &dce_v8_1_ip_block);
 		amdgpu_device_ip_block_add(adev, &gfx_v7_1_ip_block);
 		amdgpu_device_ip_block_add(adev, &cik_sdma_ip_block);
-		/*amdgpu_device_ip_block_add(adev, &uvd_v4_2_ip_block)*/;
-		/*amdgpu_device_ip_block_add(adev, &vce_v2_0_ip_block)*/;
+		/* Re-enable Liverpool media blocks while we sort out PS4 bring-up. */
+		amdgpu_device_ip_block_add(adev, &uvd_v4_2_ip_block);
+		amdgpu_device_ip_block_add(adev, &vce_v2_0_ip_block);
 		break;
 	case CHIP_GLADIUS:
 		amdgpu_device_ip_block_add(adev, &cik_common_ip_block);
