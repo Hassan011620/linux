@@ -2503,14 +2503,10 @@ static int cik_common_early_init(struct amdgpu_ip_block *ip_block)
 		case CHIP_LIVERPOOL:
 			adev->cg_flags =
 				AMD_CG_SUPPORT_GFX_MGCG |
-				AMD_CG_SUPPORT_GFX_MGLS |
 				/*AMD_CG_SUPPORT_GFX_CGCG |*/
 				AMD_CG_SUPPORT_GFX_CGLS |
 				AMD_CG_SUPPORT_GFX_CGTS |
-				AMD_CG_SUPPORT_GFX_CGTS_LS |
-				AMD_CG_SUPPORT_GFX_CP_LS |
 				AMD_CG_SUPPORT_SDMA_MGCG |
-				AMD_CG_SUPPORT_SDMA_LS |
 				AMD_CG_SUPPORT_VCE_MGCG |
 				AMD_CG_SUPPORT_UVD_MGCG |
 				AMD_CG_SUPPORT_HDP_MGCG;
@@ -2530,14 +2526,10 @@ static int cik_common_early_init(struct amdgpu_ip_block *ip_block)
 		case CHIP_GLADIUS:
 			adev->cg_flags =
 				AMD_CG_SUPPORT_GFX_MGCG |
-				AMD_CG_SUPPORT_GFX_MGLS |
 				AMD_CG_SUPPORT_GFX_CGCG |
 				AMD_CG_SUPPORT_GFX_CGLS |
 				AMD_CG_SUPPORT_GFX_CGTS |
-				AMD_CG_SUPPORT_GFX_CGTS_LS |
-				AMD_CG_SUPPORT_GFX_CP_LS |
 				AMD_CG_SUPPORT_SDMA_MGCG |
-				AMD_CG_SUPPORT_SDMA_LS |
 				AMD_CG_SUPPORT_VCE_MGCG |
 				AMD_CG_SUPPORT_UVD_MGCG |
 				AMD_CG_SUPPORT_HDP_MGCG;
