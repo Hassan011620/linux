@@ -144,7 +144,7 @@ Profile summary:
 
 Local build:
 ```bash
-git clone https://github.com/feeRnt/ps4-linux-12xx --branch 7.0-Clean --depth=3
+git clone https://github.com/rmuxnet/ps4-linux-12xx --branch 7.0-Clean --depth=3
 # Keep a low depth to save space.
 
 cd ps4-linux-12xx
@@ -180,7 +180,7 @@ make -j"$(nproc)" LLVM=1 modules
 ---
 ## Releases and Downloads
 
-To get some pre-compiled kernels, go to the [releases section](https://github.com/feeRnt/ps4-linux-12xx/releases), and choose a kernel (bzImage) based on your needed version.
+To get some pre-compiled kernels, go to the [releases section](https://github.com/rmuxnet/ps4-linux-12xx/releases), and choose a kernel (bzImage) based on your needed version.
 
 Please read the boldened out and highlighted text, as they contain some information that might be useful for a particular release. It's very wordy, that needs to be fixed!!
 
@@ -192,6 +192,27 @@ Please read the boldened out and highlighted text, as they contain some informat
 If something doesn't work on these kernels, has missing features, or your model still has unsupported WiFi, you can open a GitHub issue to share its details.
 
 Pull requests/code contributions are always welcome.
+
+<br>
+
+---
+## Licensing
+
+### Firmware and Drivers Notice
+
+This repository includes non-GPL firmware/cfg blobs under extra_firmware/,
+
+These files (e.g. Marvell and MediaTek firmware) are distributed under
+their respective vendor licenses and are not covered by the GPL.
+
+See extra_firmware/README.license for details.
+
+
+There is an additional Dual BSD 3 & GPL 2 License for the MediaTek wireless driver in wireless/mediatek/mt76x8/**
+
+See drivers/net/wireless/mediatek/mt76x8/README.license for details.
+
+-- The rest of the repository and code is under the same terms as the Linux Kernel, GPLv2, unless noted otherwise --
 
 <br>
 

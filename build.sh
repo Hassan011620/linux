@@ -19,11 +19,16 @@ set -euo pipefail
 
 OUTPUT_DIR="${PWD}/out"
 FIRMWARE_DIR="${PWD}/extra_firmware"
-BASE_URL="https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main"
+FIRMWARE_URL_BASE="https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main"
+declare -A FIRMWARE_URL_OVERRIDES
+#FIRMWARE_URL_OVERRIDES["mrvl/sd8797_uapsta.bin"]="f87c5b8dd547bcb434d5296ead3748241810c1d8" #sucks too
+# We need an older firmware version from ~2013-2016 for Aeolias' 8797 SDIO Chip, ideally the one that's used on the PS4 OS.
+# This version is the closest to that we have (besides the one packed in Orbis Torus (WiFi+BT) firmware).
 
 # PS4 Jaguar tuning
 export KCFLAGS="-march=btver2 -mtune=btver2 -Os"
 export KAFLAGS="-march=btver2 -mtune=btver2 -Os"
+
 export HOSTCFLAGS="-Wno-error=incompatible-pointer-types-discards-qualifiers"
 
 PROFILE="server"
@@ -197,14 +202,13 @@ if [[ ! -f Makefile ]] || ! grep -q "KERNELRELEASE" Makefile 2>/dev/null; then
     exit 1
 fi
 
-if [[ ! -f .config ]]; then
-    if [[ -f config ]]; then
-        echo -e "\e[1;34m[*]\e[0m Moving 'config' -> '.config'"
-        mv config .config
-    else
-        echo -e "\e[1;31mERROR:\e[0m No .config found." >&2
-        exit 1
-    fi
+# if [[ ! -f .config ]]; then  # We need to update the config file even if .config exists from a prev. cached build
+if [[ -f config ]]; then
+    echo -e "\e[1;34m[*]\e[0m Moving 'config' -> '.config'"
+    mv config .config
+else
+    echo -e "\e[1;31mERROR:\e[0m No .config found." >&2
+    exit 1
 fi
 
 if [[ "$DO_FETCH" == "1" ]]; then
@@ -232,7 +236,21 @@ if [[ "$DO_FETCH" == "1" ]]; then
             fi
             mkdir -p "$(dirname "${dest}")"
             echo -e "  \e[1;34m[↓]\e[0m Fetching: ${blob}"
-            if curl -fsSL --retry 3 --retry-delay 2 "${BASE_URL}/${blob}" -o "${dest}"; then
+
+            FIRMWARE_URL="${FIRMWARE_URL_BASE}"
+            FIRMWARE_URL_FALLBACK=""
+
+            if [[ -n "${FIRMWARE_URL_OVERRIDES[$blob]:-}" ]]; then
+                COMMIT="${FIRMWARE_URL_OVERRIDES[$blob]}"
+                FIRMWARE_URL_FALLBACK="https://gitlab.com/kernel-firmware/linux-firmware/-/raw/${COMMIT}"
+            fi
+
+            if [[ -n "${FIRMWARE_URL_FALLBACK}" ]]; then
+                FIRMWARE_URL="${FIRMWARE_URL_FALLBACK}"
+                echo -e '  \e[1;33m[!] Using non-default firmware for '${blob}'!\n  Using commit from '${FIRMWARE_URL}''
+            fi
+
+            if curl -fsSL --retry 3 --retry-delay 2 "${FIRMWARE_URL}/${blob}" -o "${dest}"; then
                 echo -e "  \e[1;32m[✓]\e[0m ${blob}"
             else
                 echo -e "  \e[1;31m[✗]\e[0m FAILED: ${blob}" >&2
