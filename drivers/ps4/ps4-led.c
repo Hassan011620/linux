@@ -108,6 +108,9 @@ struct ps4_led_node {
 	const u8 *payload;
 };
 
+static DEFINE_MUTEX(ps4_led_lock);
+static const u8 *ps4_led_current_payload;
+
 static int ps4_led_set_blocking(struct led_classdev *led_cdev,
 				enum led_brightness value)
 {
@@ -119,11 +122,23 @@ static int ps4_led_set_blocking(struct led_classdev *led_cdev,
 
 	memset(reply, 0, sizeof(reply));
 
+	mutex_lock(&ps4_led_lock);
+
+	if (ps4_led_current_payload == data) {
+		mutex_unlock(&ps4_led_lock);
+		return 0;
+	}
+
 	ret = apcie_icc_cmd(PS4_LED_ICC_MAJOR, PS4_LED_ICC_MINOR,
 			    data, PS4_LED_PAYLOAD_LEN,
 			    reply, sizeof(reply));
-	if (ret < 0)
+	if (ret < 0) {
+		mutex_unlock(&ps4_led_lock);
 		return ret;
+	}
+
+	ps4_led_current_payload = data;
+	mutex_unlock(&ps4_led_lock);
 
 	return 0;
 }
