@@ -1027,7 +1027,7 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 		amdgpu_connector->edid = drm_edid_duplicate(raw_edid);
 		drm_edid_connector_update(connector, drm_edid);
 		count = drm_edid_connector_add_modes(connector);
-		newmode = drm_mode_duplicate(dev, &mode_1080p120);
+		newmode = drm_mode_duplicate(dev, &mode_1080p);
 		if (newmode) {
 			drm_mode_probed_add(connector, newmode);
 			count++;
@@ -1047,7 +1047,7 @@ fallback_modes:
 		count++;
 	}
 
-	newmode = drm_mode_duplicate(dev, &mode_1080p120);
+	newmode = drm_mode_duplicate(dev, &mode_720p);
 	if (newmode) {
 		drm_mode_probed_add(connector, newmode);
 		count++;
@@ -1122,13 +1122,7 @@ enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
 {
 	int vic = drm_match_cea_mode(mode);
 
-	/* Allow anything that we can match up to a VIC (CEA modes) */
 	if (!vic || (vic != 16 && vic != 4 && vic != 63)) {
-	// Might need to disable 63 (1920x1080-120Hz)
-
-	/*
-	if (!vic || (vic != 16 && vic != 4)) {
-	*/
 		return MODE_BAD;
 	}
 	return MODE_OK;
