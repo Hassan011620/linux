@@ -228,6 +228,8 @@ static int ps4_fan_write(struct device *dev, enum hwmon_sensor_types type,
 
 	if (type != hwmon_temp || channel != 0 || attr != hwmon_temp_crit)
 		return -EOPNOTSUPP;
+	if (val % 1000)
+		return -EINVAL;
 
 	mutex_lock(&priv->lock);
 	if (ps4_fan_cache_valid(priv->thresh_updated, priv->thresh_valid) &&
