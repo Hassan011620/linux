@@ -964,6 +964,9 @@ static int gfx_v8_0_init_microcode(struct amdgpu_device *adev)
 	case CHIP_STONEY:
 		chip_name = "stoney";
 		break;
+	case 0x9924:
+        chip_name = "gladius";
+        break;
 	case CHIP_POLARIS10:
 		chip_name = "polaris10";
 		break;
