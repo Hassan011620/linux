@@ -459,9 +459,13 @@ if [[ "$DO_BUILD" == "1" ]]; then
     if [[ "$SOUTHBRIDGE" == "baikal" ]]; then
         echo -e "\e[1;34m[*]\e[0m Enabling Baikal southbridge support..."
         scripts/config --enable  CONFIG_X86_PS4_BAIKAL
+        scripts/config --enable  CONFIG_STMMAC_ETH
+        scripts/config --enable  CONFIG_STMMAC_LIBPCI
+        scripts/config --enable  CONFIG_DWMAC_PS4
     else
         echo -e "\e[1;34m[*]\e[0m Disabling Baikal southbridge support..."
         scripts/config --disable CONFIG_X86_PS4_BAIKAL
+        scripts/config --disable CONFIG_DWMAC_PS4
     fi
 
     # Memory management / cgroup base
@@ -710,6 +714,15 @@ if [[ "$DO_BUILD" == "1" ]]; then
 
     echo -e "\e[1;34m[*]\e[0m Running olddefconfig..."
     make "${MAKE_OPTS[@]}" olddefconfig
+
+    # Post-olddefconfig overrides (these must come after olddefconfig to survive)
+    if [[ "$SOUTHBRIDGE" == "baikal" ]]; then
+        scripts/config --enable  CONFIG_NET_VENDOR_STMICRO
+        scripts/config --enable  CONFIG_STMMAC_ETH
+        scripts/config --enable  CONFIG_STMMAC_LIBPCI
+        scripts/config --enable  CONFIG_DWMAC_PS4
+        make "${MAKE_OPTS[@]}" olddefconfig
+    fi
 
     validate_extra_firmware_blob "${REQUIRED_PS4_SD8797_FW}"
 

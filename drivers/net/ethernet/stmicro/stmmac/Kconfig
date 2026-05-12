@@ -383,6 +383,16 @@ config DWMAC_MOTORCOMM
 	  This enables glue driver for Motorcomm DWMAC-based PCI Ethernet
 	  controllers. Currently only YT6801 is supported.
 
+config DWMAC_PS4
+	tristate "PS4 Baikal DWMAC support"
+	depends on PCI
+	depends on X86_PS4_BAIKAL
+	select STMMAC_LIBPCI
+	help
+	  This enables the DWMAC1000 ethernet controller on PS4 consoles
+	  with the Baikal southbridge (CUH-2xxx Slim, CUH-7xxx Pro).
+	  The MAC registers are accessed through the glue device's BAR2.
+
 config STMMAC_PCI
 	tristate "STMMAC PCI bus support"
 	depends on PCI
