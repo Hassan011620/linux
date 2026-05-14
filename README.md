@@ -4,7 +4,7 @@
 
 | Branch | Target | Notes |
 |--------|--------|-------|
-| [`7.0-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/7.0-Stable) | Aeolia / Belize | Current recommended branch |
+| [`aeolia/7.0.7-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/aeolia/7.0.7-Stable) | Aeolia / Belize | Current recommended branch |
 | [`rmux/baikal/7.0-FixUP`](https://github.com/rmuxnet/ps4-linux-12xx/tree/rmux/baikal/7.0-FixUP) | Baikal | Active 7.0 bringup for Slim/Pro |
 | [`6.18.21-Strawberry`](https://github.com/rmuxnet/ps4-linux-12xx/tree/6.18.21-Strawberry) | Aeolia / Belize | LTS fallback line |
 
