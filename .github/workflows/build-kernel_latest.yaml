@@ -1,0 +1,225 @@
+name: "Strawberry-LTS"
+run-name: "${{ github.event_name == 'workflow_dispatch' && format('Strawberry-{0}-{1}', inputs.profile, inputs.lto) || format('Strawberry-tag-{0}', github.ref_name) }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Build Profile"
+        required: true
+        default: "Server"
+        type: choice
+        options:
+          - Server
+          - General
+      lto:
+        description: "LTO Variant"
+        required: true
+        default: "ThinLTO"
+        type: choice
+        options:
+          - ThinLTO
+          - FullLTO
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up cache env vars
+        id: cache-workspace-vars
+        run: |
+          echo "CACHE_WORKSPACE_KEY=${{ runner.os }}-workspace-${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "CACHE_WORKSPACE_RESTORE_KEY=${{ runner.os }}-workspace-${{ github.ref_name }}" >> "$GITHUB_ENV"
+
+      - name: Resolve build variables
+        id: build-vars
+        shell: bash
+        run: |
+          PROFILE_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'Server' }}"
+          LTO_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.lto || 'ThinLTO' }}"
+
+          PROFILE_INPUT="$(echo "$PROFILE_INPUT" | tr '[:upper:]' '[:lower:]')"
+          LTO_INPUT="$(echo "$LTO_INPUT" | tr '[:upper:]' '[:lower:]')"
+
+          case "$PROFILE_INPUT" in
+            general)
+              TARGET_PROFILE="General"
+              ;;
+            *)
+              TARGET_PROFILE="Server"
+              ;;
+          esac
+
+          case "$LTO_INPUT" in
+            fulllto|full)
+              TARGET_LTO="FullLTO"
+              ;;
+            *)
+              TARGET_LTO="ThinLTO"
+              ;;
+          esac
+
+          case "${TARGET_LTO}:${TARGET_PROFILE}" in
+            ThinLTO:Server)
+              SWAP_GB="16"
+              ;;
+            ThinLTO:General)
+              SWAP_GB="20"
+              ;;
+            FullLTO:Server)
+              SWAP_GB="24"
+              ;;
+            FullLTO:General)
+              SWAP_GB="28"
+              ;;
+          esac
+
+          echo "target_profile=${TARGET_PROFILE}" >> "$GITHUB_OUTPUT"
+          echo "target_lto=${TARGET_LTO}" >> "$GITHUB_OUTPUT"
+          echo "cache_suffix=${TARGET_PROFILE}-${TARGET_LTO}" >> "$GITHUB_OUTPUT"
+          echo "swap_gb=${SWAP_GB}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Cache of Github Workspace
+        uses: actions/cache/restore@v4
+        id: cache-restore-workspace
+        with:
+          path: kernel-source-host
+          key: ${{ env.CACHE_WORKSPACE_RESTORE_KEY }}-${{ steps.build-vars.outputs.cache_suffix }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: kernel-source-host
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          clean: false
+
+      - name: Fetch private firmware
+        run: |
+          git clone --depth=1 \
+            https://x-access-token:${{ secrets.FW_REPO_PAT }}@github.com/sony-jaguar-devs/firmware.git \
+            /tmp/jaguar-fw
+
+          mkdir -p kernel-source-host/extra_firmware/mrvl
+          cp /tmp/jaguar-fw/sd8797_uapsta.bin kernel-source-host/extra_firmware/mrvl/sd8797_uapsta.bin
+          test -s kernel-source-host/extra_firmware/mrvl/sd8797_uapsta.bin
+
+          rm -rf /tmp/jaguar-fw
+
+      - name: Copy Dockerfile and .dockerignore to workspace root
+        run: |
+          cp kernel-source-host/Dockerfile ./Dockerfile
+          cp kernel-source-host/.dockerignore ./.dockerignore
+
+      - name: Set SUID to tar binary
+        run: sudo chown root /bin/tar && sudo chmod u+s /bin/tar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker Layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ hashFiles('Dockerfile') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+
+      - name: Build Docker image with cache
+        run: |
+          mkdir -p /tmp/.buildx-cache
+          docker buildx build \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --tag kernel-linux-ps4:latest \
+            --load \
+            .
+
+      - name: Setup compile error problem-matching for kernel compilation
+        run: echo "::add-matcher::kernel-source-host/.github/problem-matchers/kernel-compile-errors.json"
+
+      - name: Set up swapfile
+        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761
+        with:
+          swap-size-gb: ${{ steps.build-vars.outputs.swap_gb }}
+
+      - name: Compile the linux kernel with docker run
+        id: compile-kernel-step
+        shell: bash
+        run: |
+          set +e
+
+          docker rm -f kernel >/dev/null 2>&1 || true
+
+          docker run -i --name kernel -d \
+            -v "${{ github.workspace }}/kernel-source-host:/container/workspace/kernel-source-container" \
+            -w /container/workspace/kernel-source-container \
+            kernel-linux-ps4:latest tail -f /dev/null
+
+          docker exec -i kernel bash <<EOF
+          set -e
+
+          TARGET_PROFILE="${{ steps.build-vars.outputs.target_profile }}"
+          TARGET_LTO="${{ steps.build-vars.outputs.target_lto }}"
+
+          echo "Executing build.sh with profile: \$TARGET_PROFILE"
+          echo "Executing build.sh with LTO: \$TARGET_LTO"
+
+          chmod +x build.sh
+          ./build.sh --option 3 use="\$TARGET_PROFILE" lto="\$TARGET_LTO"
+
+          echo "Packaging build artifacts..."
+
+          ARTIFACT_BASENAME="\$(cat out/artifact_name.txt 2>/dev/null || true)"
+          if [[ -z "\$ARTIFACT_BASENAME" ]]; then
+            ARTIFACT_BASENAME="Strawberry-\${TARGET_LTO}-\${TARGET_PROFILE}-LTS"
+          fi
+          ARTIFACT_FILE="\${ARTIFACT_BASENAME}.tar.gz"
+
+          tar -cvzf "/container/workspace/kernel-source-container/\${ARTIFACT_FILE}" \
+            -C out bzImage .config --owner=0 --group=0
+
+          printf '%s\n' "\${ARTIFACT_FILE}" > /container/workspace/kernel-source-container/artifact_name.txt
+          EOF
+
+          cd "${{ github.workspace }}/kernel-source-host"
+          echo "compile-kernel-complete=true" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Remove compile error problem-matching
+        run: echo "::remove-matcher owner=kernel-compile-docker::"
+
+      - name: Read Artifact Name
+        id: read-artifact
+        working-directory: kernel-source-host
+        run: |
+          ARTIFACT_NAME="$(cat artifact_name.txt 2>/dev/null || echo kernel.tar.gz)"
+          echo "pkg_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload kernel image to github actions artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.read-artifact.outputs.pkg_name }}
+          path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_name }}
+          archive: false
+
+      - name: Delete Cache of Github Workspace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: steps.cache-restore-workspace.outputs.cache-hit && steps.compile-kernel-step.outputs.compile-kernel-complete
+        run: |
+          gh cache delete --repo ${{ github.repository }} ${{ steps.cache-restore-workspace.outputs.cache-primary-key }} || true
+
+      - name: Save Cache of Github Workspace
+        uses: actions/cache/save@v4
+        if: steps.compile-kernel-step.outputs.compile-kernel-complete
+        with:
+          path: kernel-source-host
+          key: ${{ steps.cache-restore-workspace.outputs.cache-primary-key }}
