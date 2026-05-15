@@ -2571,6 +2571,14 @@ static int cik_common_hw_init(struct amdgpu_ip_block *ip_block)
 	    adev->asic_type == CHIP_GLADIUS)
 		liverpool_clk_force_max(adev);
 
+	if (adev->asic_type == CHIP_LIVERPOOL) {
+		adev->clock.default_sclk = 80000;
+		adev->clock.default_mclk = 137500;
+	} else if (adev->asic_type == CHIP_GLADIUS) {
+		adev->clock.default_sclk = 91100;
+		adev->clock.default_mclk = 170000;
+	}
+
 	return 0;
 }
 
