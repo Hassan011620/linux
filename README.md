@@ -1,6 +1,6 @@
-# Linux Kernel — Sony PlayStation 4
-
 <div align="center">
+
+# Linux Kernel — Sony PlayStation 4
 
 [![Stars](https://img.shields.io/github/stars/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=yellow)](https://github.com/rmuxnet/ps4-linux-12xx/stargazers)
 [![Forks](https://img.shields.io/github/forks/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=blue)](https://github.com/rmuxnet/ps4-linux-12xx/network/members)
@@ -50,7 +50,7 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 ## Build
 
 \`\`\`bash
-git clone https://github.com/rmuxnet/ps4-linux-12xx --branch 7.0-Stable --depth=3
+git clone https://github.com/rmuxnet/ps4-linux-12xx --branch aeolia-belize/7.0.8-Stable --depth=3
 cd ps4-linux-12xx
 
 # SD8797 firmware required if config requests it:
