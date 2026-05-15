@@ -1,11 +1,26 @@
 # Linux Kernel — Sony PlayStation 4
 
+<div align="center">
+
+[![Stars](https://img.shields.io/github/stars/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=yellow)](https://github.com/rmuxnet/ps4-linux-12xx/stargazers)
+[![Forks](https://img.shields.io/github/forks/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=blue)](https://github.com/rmuxnet/ps4-linux-12xx/network/members)
+[![Issues](https://img.shields.io/github/issues/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=red)](https://github.com/rmuxnet/ps4-linux-12xx/issues)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/rmuxnet/ps4-linux-12xx/build-kernel_latest.yaml?style=for-the-badge)](https://github.com/rmuxnet/ps4-linux-12xx/actions)
+
+**Open source kernel tree for the Sony PlayStation 4 (Aeolia, Belize, Baikal).**
+
+[Explore Branches](#stable-branches) • [Compatibility](#console-compatibility) • [Build Guide](#build) • [Contributing](#issues--contributing)
+
+</div>
+
+---
+
 ## Stable Branches
 
 | Branch | Target | Notes |
 |--------|--------|-------|
-| [`aeolia/7.0.7-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/aeolia/7.0.7-Stable) | Aeolia / Belize | Current recommended branch |
-| [`rmux/baikal/7.0-FixUP`](https://github.com/rmuxnet/ps4-linux-12xx/tree/rmux/baikal/7.0-FixUP) | Baikal | Active 7.0 bringup for Slim/Pro |
+| [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/aeolia-belize/7.0.8-Stable) | Aeolia / Belize | Current recommended branch |
+| [`baikal/7.0.8-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/baikal/7.0.8-Stable) | Baikal | Active 7.0 bringup for Slim/Pro |
 | [`6.18.21-Strawberry`](https://github.com/rmuxnet/ps4-linux-12xx/tree/6.18.21-Strawberry) | Aeolia / Belize | LTS fallback line |
 
 For all branches see [BRANCHES.md](./BRANCHES.md).
@@ -16,16 +31,16 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 
 | Console Model | Variation | WiFi+BT Chip | Compatible Branches |
 |---|---|---|---|
-| CUH-1216(A/B) | Phat - Belize B0 | Marvell 88w8897 / Torus 2 | `7.0-Stable`, `6.15.4`, `5.15.15` |
-| CUH-1215(A/B) | Phat - Belize | Marvell 88w8897 / Torus 2 | `7.0-Stable`, `6.15.4`, `5.15.15` |
-| CUH-1003 | Phat - Aeolia | Unknown | `7.0-Stable`, `6.15.4` |
-| CUH-1004A | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `7.0-Stable`, `6.15.4` |
-| CUH-1116A | Phat - Aeolia | Unknown | `7.0-Stable`, `6.15.4` |
-| CUH-2215B | Slim - Baikal | Unknown | `rmux/baikal/7.0-FixUP`, `5.4.247` |
-| CUH-2216A | Slim - Baikal B1 | MediaTek 7668 | `rmux/baikal/7.0-FixUP`, `5.4.247` |
-| CUH-2216A | Slim - Belize | MediaTek 7668 | `7.0-Stable`, `5.15.15` |
-| CUH-7116B | Pro - Baikal B1 | Unknown | `rmux/baikal/7.0-FixUP`, `5.4.247` |
-| CUH-7202B | Pro - Baikal | Unknown | `rmux/baikal/7.0-FixUP`, `5.4.247` |
+| CUH-1216(A/B) | Phat - Belize B0 | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-1215(A/B) | Phat - Belize | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-1003 | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
+| CUH-1004A | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
+| CUH-1116A | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
+| CUH-2215B | Slim - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+| CUH-2216A | Slim - Baikal B1 | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+| CUH-2216A | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-7116B | Pro - Baikal B1 | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+| CUH-7202B | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
 
 > A/B suffixes denote 500GB vs 1TB drive variants.
 
@@ -120,3 +135,14 @@ Steady, open, credited work from 6.15 to 7.0. Not a rushed Discord dump. Not a r
 - [Discussions](https://github.com/rmuxnet/ps4-linux-12xx/discussions)
 
 Include: console model, southbridge, branch + commit, `dmesg`, and which subsystems work or don't.
+
+---
+
+<div align="center">
+
+### Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/rmuxnet/ps4-linux-12xx.svg)](https://starchart.cc/rmuxnet/ps4-linux-12xx)
+
+</div>
+
