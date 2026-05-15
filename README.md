@@ -6,10 +6,11 @@
 [![Forks](https://img.shields.io/github/forks/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=blue)](https://github.com/rmuxnet/ps4-linux-12xx/network/members)
 [![Issues](https://img.shields.io/github/issues/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=red)](https://github.com/rmuxnet/ps4-linux-12xx/issues)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/rmuxnet/ps4-linux-12xx/build-kernel_latest.yaml?style=for-the-badge)](https://github.com/rmuxnet/ps4-linux-12xx/actions)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/fZQScGvRQb)
 
 **Open source kernel tree for the Sony PlayStation 4 (Aeolia, Belize, Baikal).**
 
-[Explore Branches](#stable-branches) • [Compatibility](#console-compatibility) • [Build Guide](#build) • [Contributing](#issues--contributing)
+[Explore Branches](#stable-branches) • [Compatibility](#console-compatibility) • [Build Guide](#build) • [Contributing](#issues--contributing) • [Discord](https://discord.gg/fZQScGvRQb)
 
 </div>
 
