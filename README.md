@@ -49,7 +49,7 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 
 ## Build
 
-\`\`\`bash
+```bash
 git clone https://github.com/rmuxnet/ps4-linux-12xx --branch aeolia-belize/7.0.8-Stable --depth=3
 cd ps4-linux-12xx
 
@@ -59,7 +59,7 @@ cd ps4-linux-12xx
 ./build.sh --option 3 use=General lto=ThinLTO
 # or
 ./build.sh --option 3 use=Server lto=FullLTO
-\`\`\`
+```
 
 **Profiles:** `General` — desktop/gaming. `Server` — headless, container stack enabled.
 
