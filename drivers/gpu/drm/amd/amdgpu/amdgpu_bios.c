@@ -44,6 +44,8 @@
 #define AMD_IS_VALID_VBIOS(p) ((p)[0] == 0x55 && (p)[1] == 0xAA)
 #define AMD_VBIOS_LENGTH(p) ((p)[2] << 9)
 
+MODULE_FIRMWARE("amdgpu/09_VBIOS_GLRoma_v014085000018.rom");
+
 /* Check if current bios is an ATOM BIOS.
  * Return true if it is ATOM BIOS. Otherwise, return false.
  */
@@ -434,6 +436,35 @@ static inline bool amdgpu_acpi_vfct_bios(struct amdgpu_device *adev)
 }
 #endif
 
+// LLM assisted (Claude Sonnet)
+static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
+{
+    const struct firmware *fw;
+    int r;
+
+    r = request_firmware(&fw, "amdgpu/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
+    if (r) {
+        dev_dbg(adev->dev, "PS4 Pro: no firmware VBIOS (amdgpu/09_VBIOS_GLRoma_v014085000018.rom)\n");
+        return false;
+    }
+
+    adev->bios = kmemdup(fw->data, fw->size, GFP_KERNEL);
+    adev->bios_size = fw->size;
+    release_firmware(fw);
+
+    if (!adev->bios)
+        return false;
+
+    if (!check_atom_bios(adev, adev->bios_size)) {
+        amdgpu_bios_release(adev);
+        dev_warn(adev->dev, "PS4 Pro: firmware VBIOS failed AtomBIOS check\n");
+        return false;
+    }
+
+    dev_info(adev->dev, "PS4 Pro: loaded VBIOS from firmware file\n");
+    return true;
+}
+
 static bool amdgpu_get_bios_apu(struct amdgpu_device *adev)
 {
 	/*
@@ -455,6 +486,11 @@ static bool amdgpu_get_bios_apu(struct amdgpu_device *adev)
 				 "PS4 Pro: fetched VBIOS from VFCT\n");
 			return true;
 		}
+		if (amdgpu_ps4_load_vbios_firmware(adev)) {
+            dev_info(adev->dev,
+                     "PS4 Pro: fetched VBIOS from firmware dump\n");
+            return true;
+        }
 		/* No BIOS found — that is OK, VBIOS is optional for PS4 Pro */
 		dev_info(adev->dev,
 			 "PS4 Pro: no VBIOS found, continuing without it\n");
