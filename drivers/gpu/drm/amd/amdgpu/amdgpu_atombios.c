@@ -769,6 +769,9 @@ union igp_info {
  */
 int amdgpu_atombios_get_vram_width(struct amdgpu_device *adev)
 {
+	// adev->mode_info.atom_context is NULL if no VBIOS was loaded
+    	if (!adev->mode_info.atom_context)
+        	return 256;
 	struct amdgpu_mode_info *mode_info = &adev->mode_info;
 	int index = GetIndexIntoMasterTable(DATA, IntegratedSystemInfo);
 	u16 data_offset, size;
