@@ -472,7 +472,8 @@ static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
     const struct firmware *fw;
     int r;
 
-    r = request_firmware(&fw, "amdgpu/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
+	
+    r = request_firmware(&fw, "amdgpu/vbiosdumps/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
     if (r) {
         dev_dbg(adev->dev, "PS4 Pro: no firmware VBIOS\n");
         return false;
