@@ -75,6 +75,9 @@ MODULE_FIRMWARE("amdgpu/polaris10_rlc.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_vce.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_sdma.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_sdma1.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_mc.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_smc.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_uvd.bin");
 
 /* Check if current bios is an ATOM BIOS.
  * Return true if it is ATOM BIOS. Otherwise, return false.
@@ -472,7 +475,8 @@ static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
     const struct firmware *fw;
     int r;
 
-    r = request_firmware(&fw, "amdgpu/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
+	
+    r = request_firmware(&fw, "amdgpu/vbiosdumps/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
     if (r) {
         dev_dbg(adev->dev, "PS4 Pro: no firmware VBIOS\n");
         return false;
