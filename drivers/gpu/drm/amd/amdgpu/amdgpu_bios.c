@@ -61,23 +61,23 @@ MODULE_FIRMWARE("amdgpu/gladius_mec.bin");
 MODULE_FIRMWARE("amdgpu/gladius_mec2.bin");
 MODULE_FIRMWARE("amdgpu/gladius_rlc.bin"); */
 
-MODULE_FIRMWARE("amdgpu/polaris10_ce.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_ce_2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_pfp.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_pfp_2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_me.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_me_2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_mec.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_mec_2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_mec2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_mec2_2.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_rlc.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_vce.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_sdma.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_sdma1.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_mc.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_smc.bin");
-MODULE_FIRMWARE("amdgpu/polaris10_uvd.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_ce.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_ce_2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_pfp.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_pfp_2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_me.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_me_2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_mec.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_mec_2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_mec2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_mec2_2.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_rlc.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_vce.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_sdma.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_sdma1.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_mc.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_smc.bin");
+// MODULE_FIRMWARE("amdgpu/polaris10_sdma1.bin");
 
 /* Check if current bios is an ATOM BIOS.
  * Return true if it is ATOM BIOS. Otherwise, return false.
