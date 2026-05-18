@@ -1698,7 +1698,6 @@ static int gfx_v8_0_gpu_early_init(struct amdgpu_device *adev)
 		break;
 	case CHIP_POLARIS10:
 	case CHIP_VEGAM:
-	case 0x9924:   /* Gladius (PS4 Pro) */
 		ret = amdgpu_atombios_get_gfx_info(adev);
 		if (ret)
 			return ret;
@@ -1711,6 +1710,23 @@ static int gfx_v8_0_gpu_early_init(struct amdgpu_device *adev)
 		adev->gfx.config.sc_hiz_tile_fifo_size = 0x30;
 		adev->gfx.config.sc_earlyz_tile_fifo_size = 0x130;
 		gb_addr_config = TONGA_GB_ADDR_CONFIG_GOLDEN;
+		break;
+	case 0x9924: /* Gladius (PS4 Pro) */
+		adev->gfx.config.max_shader_engines          = 4;
+		adev->gfx.config.max_tile_pipes              = 8;
+		adev->gfx.config.max_cu_per_sh               = 5;
+		adev->gfx.config.max_sh_per_se               = 2;
+		adev->gfx.config.max_backends_per_se         = 4;
+		adev->gfx.config.max_texture_channel_caches  = 8;
+		adev->gfx.config.max_gprs                    = 256;
+		adev->gfx.config.max_gs_threads              = 32;
+		adev->gfx.config.max_hw_contexts             = 8;
+		
+		adev->gfx.config.sc_prim_fifo_size_frontend  = 0x20;
+		adev->gfx.config.sc_prim_fifo_size_backend   = 0x100;
+		adev->gfx.config.sc_hiz_tile_fifo_size       = 0x30;
+		adev->gfx.config.sc_earlyz_tile_fifo_size    = 0x130;
+		gb_addr_config = POLARIS10_GB_ADDR_CONFIG_GOLDEN;
 		break;
 	case CHIP_TONGA:
 		adev->gfx.config.max_shader_engines = 4;
