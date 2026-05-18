@@ -1721,12 +1721,12 @@ static int gfx_v8_0_gpu_early_init(struct amdgpu_device *adev)
 		adev->gfx.config.max_gprs                    = 256;
 		adev->gfx.config.max_gs_threads              = 32;
 		adev->gfx.config.max_hw_contexts             = 8;
-		
+
 		adev->gfx.config.sc_prim_fifo_size_frontend  = 0x20;
 		adev->gfx.config.sc_prim_fifo_size_backend   = 0x100;
 		adev->gfx.config.sc_hiz_tile_fifo_size       = 0x30;
 		adev->gfx.config.sc_earlyz_tile_fifo_size    = 0x130;
-		gb_addr_config = POLARIS10_GB_ADDR_CONFIG_GOLDEN;
+		gb_addr_config = TONGA_GB_ADDR_CONFIG_GOLDEN;
 		break;
 	case CHIP_TONGA:
 		adev->gfx.config.max_shader_engines = 4;
