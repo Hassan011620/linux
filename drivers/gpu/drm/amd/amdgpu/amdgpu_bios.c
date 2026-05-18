@@ -45,7 +45,33 @@
 #define AMD_IS_VALID_VBIOS(p) ((p)[0] == 0x55 && (p)[1] == 0xAA)
 #define AMD_VBIOS_LENGTH(p) ((p)[2] << 9)
 
-MODULE_FIRMWARE("amdgpu/09_VBIOS_GLRoma_v014085000018.rom");
+MODULE_FIRMWARE("amdgpu/vbiosdumps/09_VBIOS_GLRoma_v014085000018.rom");
+
+// MODULE_FIRMWARE("amdgpu/tonga_ce.bin");
+// MODULE_FIRMWARE("amdgpu/tonga_pfp.bin");
+// MODULE_FIRMWARE("amdgpu/tonga_me.bin");
+// MODULE_FIRMWARE("amdgpu/tonga_mec.bin");
+// MODULE_FIRMWARE("amdgpu/tonga_mec2.bin");
+// MODULE_FIRMWARE("amdgpu/tonga_rlc.bin");
+
+/* MODULE_FIRMWARE("amdgpu/gladius_ce.bin");
+MODULE_FIRMWARE("amdgpu/gladius_pfp.bin");
+MODULE_FIRMWARE("amdgpu/gladius_me.bin");
+MODULE_FIRMWARE("amdgpu/gladius_mec.bin");
+MODULE_FIRMWARE("amdgpu/gladius_mec2.bin");
+MODULE_FIRMWARE("amdgpu/gladius_rlc.bin"); */
+
+MODULE_FIRMWARE("amdgpu/polaris10_ce.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_ce_2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_pfp.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_pfp_2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_me.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_me_2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_mec.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_mec_2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_mec2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_mec2_2.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_rlc.bin");
 
 /* Check if current bios is an ATOM BIOS.
  * Return true if it is ATOM BIOS. Otherwise, return false.
@@ -437,7 +463,7 @@ static inline bool amdgpu_acpi_vfct_bios(struct amdgpu_device *adev)
 }
 #endif
 
-// LLM assisted (Claude Sonnet)
+// LLM assisted code (Claude Sonnet)
 static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
 {
     const struct firmware *fw;
@@ -445,12 +471,22 @@ static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
 
     r = request_firmware(&fw, "amdgpu/09_VBIOS_GLRoma_v014085000018.rom", adev->dev);
     if (r) {
-        dev_dbg(adev->dev, "PS4 Pro: no firmware VBIOS (amdgpu/09_VBIOS_GLRoma_v014085000018.rom)\n");
+        dev_dbg(adev->dev, "PS4 Pro: no firmware VBIOS\n");
         return false;
     }
 
-    adev->bios = kmemdup(fw->data, fw->size, GFP_KERNEL);
-    adev->bios_size = fw->size;
+    /* The ROM dump has a 4-byte prepended header before the 55AA signature */
+    #define PS4_VBIOS_HEADER_OFFSET 4
+
+    if (fw->size <= PS4_VBIOS_HEADER_OFFSET) {
+        dev_warn(adev->dev, "PS4 Pro: VBIOS firmware too small\n");
+        release_firmware(fw);
+        return false;
+    }
+
+    adev->bios_size = fw->size - PS4_VBIOS_HEADER_OFFSET;
+    adev->bios = kmemdup(fw->data + PS4_VBIOS_HEADER_OFFSET,
+                         adev->bios_size, GFP_KERNEL);
     release_firmware(fw);
 
     if (!adev->bios)
@@ -462,7 +498,7 @@ static bool amdgpu_ps4_load_vbios_firmware(struct amdgpu_device *adev)
         return false;
     }
 
-    dev_info(adev->dev, "PS4 Pro: loaded VBIOS from firmware file\n");
+    dev_info(adev->dev, "PS4 Pro: loaded VBIOS from firmware dump\n");
     return true;
 }
 
