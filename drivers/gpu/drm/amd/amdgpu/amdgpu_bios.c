@@ -72,6 +72,9 @@ MODULE_FIRMWARE("amdgpu/polaris10_mec_2.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_mec2.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_mec2_2.bin");
 MODULE_FIRMWARE("amdgpu/polaris10_rlc.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_vce.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_sdma.bin");
+MODULE_FIRMWARE("amdgpu/polaris10_sdma1.bin");
 
 /* Check if current bios is an ATOM BIOS.
  * Return true if it is ATOM BIOS. Otherwise, return false.

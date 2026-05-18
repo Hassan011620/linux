@@ -1899,7 +1899,7 @@ CONFIG_PREVENT_FIRMWARE_BUILD=y
 CONFIG_FW_LOADER=y
 CONFIG_FW_LOADER_PAGED_BUF=y
 CONFIG_FW_LOADER_SYSFS=y
-CONFIG_EXTRA_FIRMWARE="amdgpu/polaris10_ce.bin amdgpu/polaris10_ce_2.bin amdgpu/polaris10_pfp.bin amdgpu/polaris10_pfp_2.bin amdgpu/polaris10_me.bin amdgpu/polaris10_me_2.bin amdgpu/polaris10_mec.bin amdgpu/polaris10_mec_2.bin amdgpu/polaris10_mec2.bin amdgpu/polaris10_mec2_2.bin amdgpu/polaris10_rlc.bin amdgpu/vbiosdumps/09_VBIOS_GLRoma_v014085000018.rom mrvl/sd8897_uapsta.bin mediatek/mt7668pr2h.bin EEPROM_MT7668.bin EEPROM_MT7668_e1.bin mt7668_patch_e1_hdr.bin mt7668_patch_e2_hdr.bin TxPwrLimit_MT76x8.dat wifi.cfg WIFI_RAM_CODE2_SDIO_MT7668.bin WIFI_RAM_CODE2_USB_MT7668.bin WIFI_RAM_CODE_MT7668.bin"
+CONFIG_EXTRA_FIRMWARE="amdgpu/polaris10_vce.bin amdgpu/polaris10_sdma.bin amdgpu/polaris10_sdma1.bin amdgpu/polaris10_ce.bin amdgpu/polaris10_ce_2.bin amdgpu/polaris10_pfp.bin amdgpu/polaris10_pfp_2.bin amdgpu/polaris10_me.bin amdgpu/polaris10_me_2.bin amdgpu/polaris10_mec.bin amdgpu/polaris10_mec_2.bin amdgpu/polaris10_mec2.bin amdgpu/polaris10_mec2_2.bin amdgpu/polaris10_rlc.bin amdgpu/vbiosdumps/09_VBIOS_GLRoma_v014085000018.rom mrvl/sd8897_uapsta.bin mediatek/mt7668pr2h.bin EEPROM_MT7668.bin EEPROM_MT7668_e1.bin mt7668_patch_e1_hdr.bin mt7668_patch_e2_hdr.bin TxPwrLimit_MT76x8.dat wifi.cfg WIFI_RAM_CODE2_SDIO_MT7668.bin WIFI_RAM_CODE2_USB_MT7668.bin WIFI_RAM_CODE_MT7668.bin"
 CONFIG_EXTRA_FIRMWARE_DIR="/home/rmux/ps4_testing/ps4-linux-12xx/extra_firmware"
 CONFIG_FW_LOADER_USER_HELPER=y
 # CONFIG_FW_LOADER_USER_HELPER_FALLBACK is not set
