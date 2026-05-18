@@ -965,10 +965,10 @@ static int gfx_v8_0_init_microcode(struct amdgpu_device *adev)
 		chip_name = "stoney";
 		break;
 	case 0x9924:
-        chip_name = "gladius";
+        chip_name = "polaris10"; /* Gladius uses Polaris10 GFX firmware */
         break;
 	case CHIP_POLARIS10:
-		chip_name = "polaris10";
+		chip_name = "polaris10"; 
 		break;
 	case CHIP_POLARIS11:
 		chip_name = "polaris11";
@@ -1698,6 +1698,7 @@ static int gfx_v8_0_gpu_early_init(struct amdgpu_device *adev)
 		break;
 	case CHIP_POLARIS10:
 	case CHIP_VEGAM:
+	case 0x9924:   /* Gladius (PS4 Pro) */
 		ret = amdgpu_atombios_get_gfx_info(adev);
 		if (ret)
 			return ret;
@@ -1901,6 +1902,7 @@ static int gfx_v8_0_sw_init(struct amdgpu_ip_block *ip_block)
 	case CHIP_POLARIS11:
 	case CHIP_POLARIS12:
 	case CHIP_VEGAM:
+	case 0x9924:   /* Gladius (PS4 Pro) */
 		adev->gfx.mec.num_mec = 2;
 		break;
 	case CHIP_TOPAZ:
