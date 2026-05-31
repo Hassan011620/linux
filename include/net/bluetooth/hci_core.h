@@ -1991,7 +1991,8 @@ void hci_conn_del_sysfs(struct hci_conn *conn);
 			 ((dev)->le_rx_def_phys & HCI_LE_SET_PHY_CODED))
 
 #define ll_privacy_capable(dev) ((dev)->le_features[0] & HCI_LE_LL_PRIVACY)
-#define ll_privacy_enabled(dev) (le_enabled(dev) && ll_privacy_capable(dev))
+#define ll_privacy_enabled(dev) (le_enabled(dev) && ll_privacy_capable(dev) && \
+				 hci_dev_test_flag(dev, HCI_PRIVACY))
 
 #define privacy_mode_capable(dev) (ll_privacy_capable(dev) && \
 				   ((dev)->commands[39] & 0x04))
@@ -2031,7 +2032,7 @@ void hci_conn_del_sysfs(struct hci_conn *conn);
  * C24: Mandatory if the LE Controller supports Connection State and either
  * LE Feature (LL Privacy) or LE Feature (Extended Advertising) is supported
  */
-#define use_enhanced_conn_complete(dev) ((ll_privacy_capable(dev) || \
+#define use_enhanced_conn_complete(dev) ((ll_privacy_enabled(dev) || \
 					 ext_adv_capable(dev)) && \
 					 !hci_test_quirk((dev), \
 							 HCI_QUIRK_BROKEN_EXT_CREATE_CONN))

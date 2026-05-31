@@ -845,7 +845,7 @@ ignore_setup_fw:
 
 ignore_func_on:
 	/* Apply the low power environment setup */
-	tci_sleep.mode = 0x5;
+	tci_sleep.mode = 0x0;
 	tci_sleep.duration = cpu_to_le16(0x640);
 	tci_sleep.host_duration = cpu_to_le16(0x640);
 	tci_sleep.host_wakeup_pin = 0;
@@ -1181,7 +1181,7 @@ static int btmtksdio_setup(struct hci_dev *hdev)
 	pm_runtime_forbid(bdev->dev);
 	pm_runtime_enable(bdev->dev);
 
-	if (enable_autosuspend)
+	if (enable_autosuspend && bdev->data->chipid != 0x7668)
 		pm_runtime_allow(bdev->dev);
 
 	bt_dev_info(hdev, "Device setup in %llu usecs", duration);
