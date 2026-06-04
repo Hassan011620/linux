@@ -582,6 +582,7 @@ static bool is_interleave_scanning(struct hci_dev *hdev)
 }
 
 static int hci_passive_scan_sync(struct hci_dev *hdev);
+static int hci_le_set_event_mask_sync(struct hci_dev *hdev);
 
 static void interleave_scan_work(struct work_struct *work)
 {
@@ -1079,7 +1080,7 @@ int hci_update_random_address_sync(struct hci_dev *hdev, bool require_privacy,
 		/* If Controller supports LL Privacy use own address type is
 		 * 0x03
 		 */
-		if (ll_privacy_capable(hdev))
+		if (ll_privacy_enabled(hdev))
 			*own_addr_type = ADDR_LE_DEV_RANDOM_RESOLVED;
 		else
 			*own_addr_type = ADDR_LE_DEV_RANDOM;
@@ -2221,6 +2222,9 @@ static int hci_le_set_addr_resolution_enable_sync(struct hci_dev *hdev, u8 val)
 	if (!ll_privacy_capable(hdev))
 		return 0;
 
+	if (val && !hci_dev_test_flag(hdev, HCI_PRIVACY))
+		return 0;
+
 	/* If controller is not/already resolving we are done. */
 	if (val == hci_dev_test_flag(hdev, HCI_LL_RPA_RESOLUTION))
 		return 0;
@@ -3049,7 +3053,7 @@ static int hci_passive_scan_sync(struct hci_dev *hdev)
 	u8 own_addr_type;
 	u8 filter_policy;
 	u16 window, interval;
-	u8 filter_dups = LE_SCAN_FILTER_DUP_ENABLE;
+	u8 filter_dups = LE_SCAN_FILTER_DUP_DISABLE;
 	int err;
 
 	if (hdev->scanning_paused) {
@@ -3062,6 +3066,8 @@ static int hci_passive_scan_sync(struct hci_dev *hdev)
 		bt_dev_err(hdev, "disable scanning failed: %d", err);
 		return err;
 	}
+
+	hci_le_set_event_mask_sync(hdev);
 
 	/* Set require_privacy to false since no SCAN_REQ are send
 	 * during passive scanning. Not using an non-resolvable address
@@ -3083,7 +3089,8 @@ static int hci_passive_scan_sync(struct hci_dev *hdev)
 	 * happen before enabling scanning. The controller does
 	 * not allow accept list modification while scanning.
 	 */
-	filter_policy = hci_update_accept_list_sync(hdev);
+	hci_update_accept_list_sync(hdev);
+	filter_policy = 0x00;
 
 	/* If suspended and filter_policy set to 0x00 (no acceptlist) then
 	 * passive scanning cannot be started since that would require the host
@@ -3206,41 +3213,18 @@ int hci_update_passive_scan_sync(struct hci_dev *hdev)
 	bt_dev_dbg(hdev, "ADV monitoring is %s",
 		   hci_is_adv_monitoring(hdev) ? "on" : "off");
 
-	if (!hci_dev_test_flag(hdev, HCI_MESH) &&
-	    list_empty(&hdev->pend_le_conns) &&
-	    list_empty(&hdev->pend_le_reports) &&
-	    !hci_is_adv_monitoring(hdev) &&
-	    !hci_dev_test_flag(hdev, HCI_PA_SYNC)) {
-		/* If there is no pending LE connections or devices
-		 * to be scanned for or no ADV monitors, we should stop the
-		 * background scanning.
-		 */
+	/* If controller is connecting, do not start scanning since some
+	 * controllers are not able to scan and connect at the same time.
+	 */
+	if (hci_lookup_le_connect(hdev))
+		return 0;
 
-		bt_dev_dbg(hdev, "stopping background scanning");
+	bt_dev_dbg(hdev, "start background scanning");
 
-		err = hci_scan_disable_sync(hdev);
-		if (err)
-			bt_dev_err(hdev, "stop background scanning failed: %d",
-				   err);
-	} else {
-		/* If there is at least one pending LE connection, we should
-		 * keep the background scan running.
-		 */
-
-		/* If controller is connecting, we should not start scanning
-		 * since some controllers are not able to scan and connect at
-		 * the same time.
-		 */
-		if (hci_lookup_le_connect(hdev))
-			return 0;
-
-		bt_dev_dbg(hdev, "start background scanning");
-
-		err = hci_passive_scan_sync(hdev);
-		if (err)
-			bt_dev_err(hdev, "start background scanning failed: %d",
-				   err);
-	}
+	err = hci_passive_scan_sync(hdev);
+	if (err)
+		bt_dev_err(hdev, "start background scanning failed: %d",
+			   err);
 
 	return err;
 }
@@ -4341,8 +4325,7 @@ static int hci_le_set_event_mask_sync(struct hci_dev *hdev)
 	if (privacy_mode_capable(hdev))
 		hdev->conn_flags |= HCI_CONN_FLAG_DEVICE_PRIVACY;
 
-	/* Mark Address Resolution if LL Privacy is supported */
-	if (ll_privacy_capable(hdev))
+	if (ll_privacy_enabled(hdev))
 		hdev->conn_flags |= HCI_CONN_FLAG_ADDRESS_RESOLUTION;
 
 	/* Mark PAST if supported */
@@ -4364,14 +4347,18 @@ static int hci_le_set_event_mask_sync(struct hci_dev *hdev)
 	/* If the controller supports the LE Set Scan Enable command,
 	 * enable the corresponding advertising report event.
 	 */
-	if (hdev->commands[26] & 0x08)
-		events[0] |= 0x02;	/* LE Advertising Report */
-
-	/* If the controller supports the LE Create Connection
-	 * command, enable the corresponding event.
+	/* Always enable LE Advertising Report and LE Connection Complete
+	 * for any LE-capable controller. Some controllers (e.g. MT7668)
+	 * omit Octets 25-27 from their supported commands bitmap entirely,
+	 * causing these events to never be enabled even though scanning
+	 * works. Gating on commands[26] is unreliable.
 	 */
-	if (hdev->commands[26] & 0x10)
+	if (lmp_le_capable(hdev)) {
+		events[0] |= 0x02;	/* LE Advertising Report */
 		events[0] |= 0x01;	/* LE Connection Complete */
+		events[0] |= 0x04;	/* LE Connection Update Complete */
+		events[0] |= 0x08;	/* LE Read Remote Features Complete */
+	}
 
 	/* If the controller supports the LE Connection Update
 	 * command, enable the corresponding event.
@@ -5998,7 +5985,6 @@ static int hci_active_scan_sync(struct hci_dev *hdev, uint16_t interval)
 	u8 own_addr_type;
 	/* Accept list is not used for discovery */
 	u8 filter_policy = 0x00;
-	/* Default is to enable duplicates filter */
 	u8 filter_dup = LE_SCAN_FILTER_DUP_ENABLE;
 	int err;
 
@@ -6015,6 +6001,8 @@ static int hci_active_scan_sync(struct hci_dev *hdev, uint16_t interval)
 	}
 
 	cancel_interleave_scan(hdev);
+
+	hci_le_set_event_mask_sync(hdev);
 
 	/* Pause address resolution for active scan and stop advertising if
 	 * privacy is enabled.
@@ -6572,6 +6560,12 @@ static int hci_le_ext_create_conn_sync(struct hci_dev *hdev,
 		plen += sizeof(*p);
 	}
 
+	if (!cp->phys) {
+		cp->phys |= LE_SCAN_PHY_1M;
+		set_ext_conn_params(conn, p);
+		plen += sizeof(*p);
+	}
+
 	return __hci_cmd_sync_status_sk(hdev, HCI_OP_LE_EXT_CREATE_CONN,
 					plen, data,
 					HCI_EV_LE_ENHANCED_CONN_COMPLETE,
@@ -6836,7 +6830,7 @@ int hci_get_random_address(struct hci_dev *hdev, bool require_privacy,
 		/* If Controller supports LL Privacy use own address type is
 		 * 0x03
 		 */
-		if (ll_privacy_capable(hdev))
+		if (ll_privacy_enabled(hdev))
 			*own_addr_type = ADDR_LE_DEV_RANDOM_RESOLVED;
 		else
 			*own_addr_type = ADDR_LE_DEV_RANDOM;
