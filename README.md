@@ -28,7 +28,17 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 
 ---
 
+## Builds
+
+Latest pre-compiled kernels are available via [GitHub Actions](https://github.com/rmuxnet/linux/actions). You need to be logged in your GitHub account order to download an artifact from GitHub Actions. Search for the run of your branch and profile (General, Server), click on it, and grab the `bzImage` artifact. Read the run notes before booting.
+
+The main difference between **General** and **Server** kernel profiles is availability of screen output. **General** has screen output, but a **Server** profile will be headless.
+
+---
+
 ## Console Compatibility
+
+
 
 | Console Model | Variation | WiFi+BT Chip | Compatible Branches |
 |---|---|---|---|
@@ -42,6 +52,8 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 | CUH-2216A | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
 | CUH-7116B | Pro - Baikal B1 | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
 | CUH-7202B | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+
+**BELIZE/BAIKAL SOUTHBRIDGE IS NOT BINDED TO THE CHASIS MODEL (except CUH-70xx) - IT WILL BE DIFFRENT ACROSS DIFFERENT CONSOLES BECAUSE ALL CHASIS WILL HAVE DIFFERENT BOARD MODELS WITH DIFFERENT SOUTHBRIDGES**
 
 > A/B suffixes denote 500GB vs 1TB drive variants.
 
@@ -64,12 +76,6 @@ cd ps4-linux-12xx
 **Profiles:** `General` — desktop/gaming. `Server` — headless, container stack enabled.
 
 Output: `out/bzImage`, `out/.config`, `out/artifact_name.txt`.
-
----
-
-## Builds
-
-Latest pre-compiled kernels are available via [GitHub Actions](https://github.com/rmuxnet/ps4-linux-12xx/actions). Click the latest run, pick your branch, and grab the `bzImage` artifact. Read the run notes before booting.
 
 ---
 
@@ -102,9 +108,6 @@ If you build on this work, credit it. That's the bare minimum.
 **Original 5.4 Baikal Bringup:**
 whitehax0r — [ps4-linux-baikal](https://github.com/whitehax0r/ps4-linux-baikal). The tree that opened the door.
 
-**Community Boost:**
-[Logic-Sunrise](https://www.logic-sunrise.com/forums/topic/108827-ps4-des-avancees-majeures-sur-le-kernel-linux-70-de-la-ps4-baikal/) — coverage that brought in the testers who made the Baikal sprint possible.
-
 **Core 7.0 Baikal Contributors:**
 - **Blyadimir** — UART, USB, display, endless testing. This wouldn't exist without him.
 - **deWaardt** — Baikal hardware maintainer, early tests.
@@ -115,7 +118,7 @@ whitehax0r — [ps4-linux-baikal](https://github.com/whitehax0r/ps4-linux-baikal
 kingabut, shyxuo, ss6530, izanhower, sgtxkitkat, vanix, mechanical, rodrigo, sudofrontman
 
 **Additional Testers:**
-Wonderfiend, Razzle, Bbang, Gryoza, fleur, froyo, Anghelo, TheGreekOne, felix_suicide, GMV, tteons, Scrooge
+Wonderfiend, TheVorkMan, Razzle, Bbang, Gryoza, fleur, froyo, Anghelo, TheGreekOne, felix_suicide, GMV, tteons, Scrooge
 
 **Maintainer:**
 **Dievas** (7xkq / rmux) — kernel upstreaming from 6.15, Baikal migration to 7.0, Strawberry maintainer.
