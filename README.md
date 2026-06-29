@@ -44,18 +44,18 @@ The main difference between **General** and **Server** kernel profiles is availa
 |---|---|---|---|
 |  |||||
 | Only Aeolia/Belize |||||
-| CUH-10xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-11xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-12xx | Phat - Belize | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-70xx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-10xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable` |
+| CUH-11xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable` |
+| CUH-12xx | Phat - Belize | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable` |
+| CUH-70xx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable` |
 |  |||||
 | Belize variations |||||
-| CUH-2xxx | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-7xxx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-2xxx | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable` |
+| CUH-7xxx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable` |
 |  |||||
 | Baikal variations |||||
-| CUH-2xxx | Slim - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
-| CUH-7xxx | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+| CUH-2xxx | Slim - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable` |
+| CUH-7xxx | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable` |
 
 **Belize/Baikal southbridge on Slim/Pro console is not tied to a chassis model; it varies across diffrent consoles because all chassis can have a different board model with a different southbridge.** (except CUH-70xx, which has only one board model variation with Belize southbridge)
 
