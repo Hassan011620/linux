@@ -30,7 +30,7 @@ For all branches see [BRANCHES.md](./BRANCHES.md).
 
 ## Builds
 
-Latest pre-compiled kernels are available via [GitHub Actions](https://github.com/rmuxnet/linux/actions). You need to be logged in your GitHub account order to download an artifact from GitHub Actions. Search for the run of your branch and profile (General, Server), click on it, and grab the `bzImage` artifact. Read the run notes before booting.
+Latest pre-compiled kernels are available via [GitHub Actions](https://github.com/rmuxnet/linux/actions). You need to be logged in your GitHub account in order to download an artifact from GitHub Actions. Search for the run of your branch and profile (General; Server), click on it, and grab the `bzImage` artifact. Read the run notes before booting.
 
 The main difference between **General** and **Server** kernel profiles is availability of screen output. **General** has screen output, but a **Server** profile will be headless.
 
@@ -40,20 +40,24 @@ The main difference between **General** and **Server** kernel profiles is availa
 
 
 
-| Console Model | Variation | WiFi+BT Chip | Compatible Branches |
+| Chasis Model | Variation - Southbridge | WiFi+BT Chip | Compatible Branches |
 |---|---|---|---|
-| CUH-1216(A/B) | Phat - Belize B0 | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-1215(A/B) | Phat - Belize | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-1003 | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
-| CUH-1004A | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
-| CUH-1116A | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21` |
-| CUH-2215B | Slim - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
-| CUH-2216A | Slim - Baikal B1 | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
-| CUH-2216A | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
-| CUH-7116B | Pro - Baikal B1 | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
-| CUH-7202B | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+|  |||||
+| Only Aeolia/Belize |||||
+| CUH-10xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-11xx | Phat - Aeolia | Marvell 88w8797 / Torus 1 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-12xx | Phat - Belize | Marvell 88w8897 / Torus 2 | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-70xx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+|  |||||
+| Belize variations |||||
+| CUH-2xxx | Slim - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+| CUH-7xxx | Pro - Belize | MediaTek 7668 / Trooper | `aeolia-belize/7.0.8-Stable`, `6.18.21`, `5.15.15` |
+|  |||||
+| Baikal variations |||||
+| CUH-2xxx | Slim - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
+| CUH-7xxx | Pro - Baikal | MediaTek 7668 / Trooper | `baikal/7.0.8-Stable`, `5.4.247` |
 
-**BELIZE/BAIKAL SOUTHBRIDGE IS NOT BINDED TO THE CHASIS MODEL (except CUH-70xx) - IT WILL BE DIFFRENT ACROSS DIFFERENT CONSOLES BECAUSE ALL CHASIS WILL HAVE DIFFERENT BOARD MODELS WITH DIFFERENT SOUTHBRIDGES**
+**Belize/Baikal southbridge on Slim/Pro console is not tied to a chassis model; it varies across diffrent consoles because all chassis can have a different board model with a different southbridge.** (except CUH-70xx, which has only one board model variation with Belize southbridge)
 
 > A/B suffixes denote 500GB vs 1TB drive variants.
 
