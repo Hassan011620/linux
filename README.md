@@ -1,14 +1,14 @@
 <div align="center">
 
-# Linux Kernel — Sony PlayStation 4
+# Strawberry Kernel
 
-[![Stars](https://img.shields.io/github/stars/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=yellow)](https://github.com/rmuxnet/ps4-linux-12xx/stargazers)
-[![Forks](https://img.shields.io/github/forks/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=blue)](https://github.com/rmuxnet/ps4-linux-12xx/network/members)
-[![Issues](https://img.shields.io/github/issues/rmuxnet/ps4-linux-12xx?style=for-the-badge&color=red)](https://github.com/rmuxnet/ps4-linux-12xx/issues)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/rmuxnet/ps4-linux-12xx/build-kernel_latest.yaml?style=for-the-badge)](https://github.com/rmuxnet/ps4-linux-12xx/actions)
+[![Stars](https://img.shields.io/github/stars/rmuxnet/linux?style=for-the-badge&color=yellow)](https://github.com/rmuxnet/linux/stargazers)
+[![Forks](https://img.shields.io/github/forks/rmuxnet/linux?style=for-the-badge&color=blue)](https://github.com/rmuxnet/linux/network/members)
+[![Issues](https://img.shields.io/github/issues/rmuxnet/linux?style=for-the-badge&color=red)](https://github.com/rmuxnet/linux/issues)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/rmuxnet/linux/build-kernel_latest.yaml?style=for-the-badge)](https://github.com/rmuxnet/linux/actions)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/fZQScGvRQb)
 
-**Open source kernel tree for the Sony PlayStation 4 (Aeolia, Belize, Baikal).**
+**Open source kernel tree — PS4 (Krait), PS5 (Anaconda), Xiaomi Pad 6 (Taipan), POCO F3 (Viper).**
 
 [Explore Branches](#stable-branches) • [Compatibility](#console-compatibility) • [Build Guide](#build) • [Contributing](#issues--contributing) • [Discord](https://discord.gg/fZQScGvRQb)
 
@@ -18,11 +18,13 @@
 
 ## Stable Branches
 
-| Branch | Target | Notes |
-|--------|--------|-------|
-| [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/aeolia-belize/7.0.8-Stable) | Aeolia / Belize | Current recommended branch |
-| [`baikal/7.0.8-Stable`](https://github.com/rmuxnet/ps4-linux-12xx/tree/baikal/7.0.8-Stable) | Baikal | Active 7.0 bringup for Slim/Pro |
-| [`6.18.21-Strawberry`](https://github.com/rmuxnet/ps4-linux-12xx/tree/6.18.21-Strawberry) | Aeolia / Belize | LTS fallback line |
+| Branch | Device | Target | Notes |
+|--------|--------|--------|-------|
+| [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-Stable) | Krait (PS4) | Aeolia / Belize | Current recommended |
+| [`aeolia-belize/7.0.8-mainline`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-mainline) | Krait (PS4) | Aeolia / Belize | PS4 bringup rewrite for upstream submission |
+| [`baikal/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/baikal/7.0.8-Stable) | Krait (PS4) | Baikal | Slim / Pro |
+| [`pipa/7.1`](https://github.com/rmuxnet/linux/tree/pipa/7.1) | Taipan (Xiaomi Pad 6) | SM8250 | Upstream: PipaDB |
+| [`alioth/7.1`](https://github.com/rmuxnet/linux/tree/alioth/7.1) | Viper (POCO F3) | SM8250 | Upstream: PipaDB |
 
 For all branches see [BRANCHES.md](./BRANCHES.md).
 
@@ -66,8 +68,8 @@ The main difference between **General** and **Server** kernel profiles is availa
 ## Build
 
 ```bash
-git clone https://github.com/rmuxnet/ps4-linux-12xx --branch aeolia-belize/7.0.8-Stable --depth=3
-cd ps4-linux-12xx
+git clone https://github.com/rmuxnet/linux --branch aeolia-belize/7.0.8-Stable --depth=3
+cd linux
 
 # SD8797 firmware required if config requests it:
 # extra_firmware/mrvl/sd8797_uapsta.bin
@@ -80,30 +82,6 @@ cd ps4-linux-12xx
 **Profiles:** `General` — desktop/gaming. `Server` — headless, container stack enabled.
 
 Output: `out/bzImage`, `out/.config`, `out/artifact_name.txt`.
-
----
-
-## Attribution and Provenance
-
-This kernel tree was upstreamed and maintained by **Dievas** (7xkq / rmux) from 6.15 through 6.17, 6.18, 6.19, and 7.0. The Baikal port was brought forward from whitehax0r's 5.4 tree onto the working 7.0 base over six days and ~120 builds, tested entirely over UART without owning Baikal hardware. The full commit history is public and traceable.
-
-### Uncredited Redistribution
-
-In April–May 2026, **saya and the KHEOPS group** cloned this tree, stripped all attribution, and released it as their own. No fork, no credit, no source link. They then publicly accused the original author of stealing.
-
-The evidence is straightforward:
-
-- This is the only public PS4 Linux kernel that went from 6.15 → 6.17 → 6.18 → 6.19 → 7.0. The full commit history is here.
-- A recent screenshot from saya's team shows `sensors` output with fan speed readout — hwmon fan reporting that only exists in this kernel:
-
-  ![saya screenshot](./images/saya_screenshot.png)
-
-- saya publicly stated: *"I don't use kernel 'strawberry', I use my bzImages released."* — bzImages built from this tree with credits removed.
-- saya later claimed to be "on 7.0.4, approaching 7.0.6" internally, done "out of passion, not for glory." There is no other public 7.0 PS4 kernel tree to base that on. The only source is this one.
-
-Calling someone's work garbage and then shipping it under your name isn't development. It's a file rename with an ego.
-
-If you build on this work, credit it. That's the bare minimum.
 
 ---
 
@@ -129,28 +107,10 @@ Wonderfiend, TheVorkMan, Razzle, Bbang, Gryoza, fleur, froyo, Anghelo, TheGreekO
 
 ---
 
-## Why Strawberry Exists
-
-Millions of PS4s are heading for the trash. Every one is an 8-core x86 machine with 8GB of RAM. Strawberry exists to keep them alive and useful.
-
-Steady, open, credited work from 6.15 to 7.0. Not a rushed Discord dump. Not a renamed clone. 🍓
-
----
-
 ## Issues / Contributing
 
-- [Issues](https://github.com/rmuxnet/ps4-linux-12xx/issues)
-- [Discussions](https://github.com/rmuxnet/ps4-linux-12xx/discussions)
+- [Issues](https://github.com/rmuxnet/linux/issues)
+- [Discussions](https://github.com/rmuxnet/linux/discussions)
 
-Include: console model, southbridge, branch + commit, `dmesg`, and which subsystems work or don't.
-
----
-
-<div align="center">
-
-### Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/rmuxnet/ps4-linux-12xx.svg)](https://starchart.cc/rmuxnet/ps4-linux-12xx)
-
-</div>
+Include: device codename, branch + commit, `dmesg`, and which subsystems work or don't.
 
