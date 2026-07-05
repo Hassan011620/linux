@@ -80,11 +80,6 @@ static int ps4_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	return 0;
 }
 
-static struct freq_attr *ps4_cpufreq_attr[] = {
-	&cpufreq_freq_attr_scaling_available_freqs,
-	NULL,
-};
-
 static struct cpufreq_driver ps4_cpufreq_driver = {
 	.name = "ps4-cpufreq",
 	.flags = CPUFREQ_CONST_LOOPS,
@@ -92,21 +87,34 @@ static struct cpufreq_driver ps4_cpufreq_driver = {
 	.verify = cpufreq_generic_frequency_table_verify,
 	.target_index = ps4_cpufreq_target_index,
 	.get = ps4_cpufreq_get,
-	.attr = ps4_cpufreq_attr,
 };
 
 static int __init ps4_cpufreq_build_table(void)
 {
 	int i, n = 0;
 	u64 val;
+	unsigned int khz;
+	bool duplicate;
+	int j;
 
 	for (i = 0; i < PS4_NUM_PSTATES; i++) {
 		rdmsrq(MSR_AMD_PSTATE_DEF_BASE + i, val);
 		if (!(val & PSTATE_EN))
 			continue;
 
+		khz = pstate_to_khz(val);
+		duplicate = false;
+		for (j = 0; j < n; j++) {
+			if (ps4_freq_table[j].frequency == khz) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (duplicate)
+			continue;
+
 		ps4_freq_table[n].driver_data = i;
-		ps4_freq_table[n].frequency = pstate_to_khz(val);
+		ps4_freq_table[n].frequency = khz;
 		n++;
 	}
 	ps4_freq_table[n].driver_data = 0;
