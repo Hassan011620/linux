@@ -100,12 +100,14 @@ jobs:
           fetch-depth: 1
           clean: false
 
-      - name: Discord Webhook
-        uses: tsickert/discord-webhook@v7
+      - name: Discord Webhook Workflow Run Announcement
+        uses: tsickert/discord-webhook@v7.0.0
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          webhook-url: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
           content: |
-            Workflow started!
+            Kernel build workflow run `#${{ github.run_number }} ${{ github.workflow }}` on branch `${{ github.ref_name }}` started by `${{ github.actor }}`
+            Estimated build time: `~17m`
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Fetch private firmware
         run: |
@@ -239,6 +241,14 @@ jobs:
           name: ${{ steps.read-artifact.outputs.pkg_targz_name }}
           path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_targz_name }}
           archive: false
+
+      - name: Discord Webhook Artifact Announcement
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+          content: |
+            Kernel build workflow run `#${{ github.run_number }}` `${{ github.workflow }}` on branch `${{ github.ref_name }}` is done!
+            Artifact: https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/${{ steps.read-artifact.outputs.pkg_zip_name }}.zip
 
       - name: Delete Cache of Github Workspace
         env:
