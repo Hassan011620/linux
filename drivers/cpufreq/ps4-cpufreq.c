@@ -37,24 +37,30 @@ static int ps4_cpufreq_target_index(struct cpufreq_policy *policy,
 {
 	u32 requested = ps4_freq_table[index].driver_data;
 	u64 val;
-	int i;
+	int i, cpu;
 
-	rdmsrq(MSR_AMD_PSTATE_CUR_LIMIT, val);
+	rdmsrq_on_cpu(policy->cpu, MSR_AMD_PSTATE_CUR_LIMIT, &val);
 	if (requested > (val & PSTATE_CURLIMIT_MASK))
 		requested = val & PSTATE_CURLIMIT_MASK;
 
-	wrmsrq(MSR_AMD_PERF_CTL, requested & PSTATE_CMD_MASK);
+	for_each_cpu(cpu, policy->cpus)
+		wrmsrq_on_cpu(cpu, MSR_AMD_PERF_CTL, requested & PSTATE_CMD_MASK);
 
-	for (i = 0; i < 100; i++) {
-		rdmsrq(MSR_AMD_PERF_STATUS, val);
-		if ((val & PSTATE_STATUS_MASK) == requested)
-			return 0;
-		udelay(100);
+	for_each_cpu(cpu, policy->cpus) {
+		for (i = 0; i < 100; i++) {
+			rdmsrq_on_cpu(cpu, MSR_AMD_PERF_STATUS, &val);
+			if ((val & PSTATE_STATUS_MASK) == requested)
+				break;
+			udelay(100);
+		}
+		if (i == 100) {
+			pr_warn("ps4-cpufreq: cpu%d timed out transitioning to P%u\n",
+				cpu, requested);
+			return -EIO;
+		}
 	}
 
-	pr_warn("ps4-cpufreq: cpu%d timed out transitioning to P%u\n",
-		policy->cpu, requested);
-	return -EIO;
+	return 0;
 }
 
 static unsigned int ps4_cpufreq_get(unsigned int cpu)
