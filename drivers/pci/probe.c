@@ -2873,7 +2873,7 @@ static int only_one_child(struct pci_bus *bus)
  */
 int pci_scan_slot(struct pci_bus *bus, int devfn)
 {
-	struct pci_dev *dev;
+	struct pci_dev *dev = NULL;
 	int fn = 0, nr = 0;
 
 	u32 l;
