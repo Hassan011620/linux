@@ -20,6 +20,14 @@ on:
         options:
           - ThinLTO
           - FullLTO
+      runner:
+        description: "Runner"
+        required: true
+        default: "Hosted"
+        type: choice
+        options:
+          - Hosted
+          - Self-hosted-PS5
   push:
     tags:
       - "v*"
@@ -28,7 +36,7 @@ jobs:
   build:
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.runner == 'Self-hosted-PS5') && fromJSON('["self-hosted", "ps5"]') || 'ubuntu-latest' }}
 
     steps:
       - name: Set up cache env vars
@@ -37,6 +45,14 @@ jobs:
           echo "CACHE_WORKSPACE_KEY=${{ runner.os }}-workspace-${{ github.run_id }}" >> "$GITHUB_ENV"
           echo "CACHE_WORKSPACE_RESTORE_KEY=${{ runner.os }}-workspace-${{ github.ref_name }}" >> "$GITHUB_ENV"
 
+      - name: Checkout CI scripts
+        uses: actions/checkout@v4
+        with:
+          path: ci-scripts
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
       - name: Resolve build variables
         id: build-vars
         shell: bash
@@ -44,48 +60,10 @@ jobs:
           PROFILE_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'Server' }}"
           LTO_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.lto || 'ThinLTO' }}"
 
-          PROFILE_INPUT="$(echo "$PROFILE_INPUT" | tr '[:upper:]' '[:lower:]')"
-          LTO_INPUT="$(echo "$LTO_INPUT" | tr '[:upper:]' '[:lower:]')"
-
-          case "$PROFILE_INPUT" in
-            general)
-              TARGET_PROFILE="General"
-              ;;
-            *)
-              TARGET_PROFILE="Server"
-              ;;
-          esac
-
-          case "$LTO_INPUT" in
-            fulllto|full)
-              TARGET_LTO="FullLTO"
-              ;;
-            *)
-              TARGET_LTO="ThinLTO"
-              ;;
-          esac
-
-          case "${TARGET_LTO}:${TARGET_PROFILE}" in
-            ThinLTO:Server)
-              SWAP_GB="16"
-              ;;
-            ThinLTO:General)
-              SWAP_GB="20"
-              ;;
-            FullLTO:Server)
-              SWAP_GB="24"
-              ;;
-            FullLTO:General)
-              SWAP_GB="28"
-              ;;
-          esac
-
-          echo "target_profile=${TARGET_PROFILE}" >> "$GITHUB_OUTPUT"
-          echo "target_lto=${TARGET_LTO}" >> "$GITHUB_OUTPUT"
-          echo "cache_suffix=${TARGET_PROFILE}-${TARGET_LTO}" >> "$GITHUB_OUTPUT"
-          echo "swap_gb=${SWAP_GB}" >> "$GITHUB_OUTPUT"
+          bash ci-scripts/.github/scripts/resolve-build-vars.sh "$PROFILE_INPUT" "$LTO_INPUT" >> "$GITHUB_OUTPUT"
 
       - name: Restore Cache of Github Workspace
+        if: runner.environment != 'self-hosted'
         uses: actions/cache/restore@v4
         id: cache-restore-workspace
         with:
@@ -100,117 +78,67 @@ jobs:
           fetch-depth: 1
           clean: false
 
-      - name: Discord Webhook Workflow Run Announcement
-        uses: tsickert/discord-webhook@v7.0.0
-        with:
-          webhook-url: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
-          content: |
-            Kernel build workflow run `#${{ github.run_number }} ${{ github.workflow }}` on branch `${{ github.ref_name }}` started by `${{ github.actor }}`
-            Estimated build time: `~17m`
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: "Notify: build started"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+        run: |
+          bash kernel-source-host/.github/scripts/notify.sh \
+            "**${{ github.repository }}** build \`#${{ github.run_number }}\` (\`${{ github.workflow }}\`) on branch \`${{ github.ref_name }}\` started by \`${{ github.actor }}\` — profile ${{ steps.build-vars.outputs.target_profile }}, ${{ steps.build-vars.outputs.target_lto }}
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Fetch private firmware
         run: |
-          git clone --depth=1 \
-            https://x-access-token:${{ secrets.FW_REPO_PAT }}@github.com/sony-jaguar-devs/firmware.git \
-            /tmp/jaguar-fw
-
-          mkdir -p kernel-source-host/extra_firmware/mrvl
-          cp /tmp/jaguar-fw/sd8797_uapsta.bin kernel-source-host/extra_firmware/mrvl/sd8797_uapsta.bin
-          test -s kernel-source-host/extra_firmware/mrvl/sd8797_uapsta.bin
-
-          rm -rf /tmp/jaguar-fw
-
-      - name: Copy Dockerfile and .dockerignore to workspace root
-        run: |
-          cp kernel-source-host/Dockerfile ./Dockerfile
-          cp kernel-source-host/.dockerignore ./.dockerignore
+          bash kernel-source-host/.github/scripts/fetch-private-firmware.sh \
+            "${{ secrets.FW_REPO_PAT }}" kernel-source-host
 
       - name: Set SUID to tar binary
         run: sudo chown root /bin/tar && sudo chmod u+s /bin/tar
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker Layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-docker-${{ hashFiles('Dockerfile') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-
-
-      - name: Build Docker image with cache
+      - name: Install build toolchain (hosted)
+        if: runner.environment != 'self-hosted'
         run: |
-          mkdir -p /tmp/.buildx-cache
-          docker buildx build \
-            --cache-from type=local,src=/tmp/.buildx-cache \
-            --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --tag kernel-linux-ps4:latest \
-            --load \
-            .
+          bash kernel-source-host/.github/scripts/install-toolchain-hosted.sh
+
+      - name: Install build toolchain (self-hosted)
+        if: runner.environment == 'self-hosted'
+        run: |
+          bash kernel-source-host/.github/scripts/install-toolchain-self-hosted.sh
 
       - name: Setup compile error problem-matching for kernel compilation
         run: echo "::add-matcher::kernel-source-host/.github/problem-matchers/kernel-compile-errors.json"
 
-      - name: Set up swapfile
+      - name: Set up swapfile (hosted)
+        if: runner.environment != 'self-hosted'
         uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761
         with:
           swap-size-gb: ${{ steps.build-vars.outputs.swap_gb }}
 
-      - name: Compile the linux kernel with docker run
+      - name: Set up swapfile (self-hosted)
+        if: runner.environment == 'self-hosted'
+        run: |
+          bash kernel-source-host/.github/scripts/swap-self-hosted.sh enable "${{ steps.build-vars.outputs.swap_gb }}"
+
+      - name: "Notify: toolchain ready, starting compile"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+        run: |
+          bash kernel-source-host/.github/scripts/notify.sh "toolchain ready on ${{ runner.environment }} runner, starting compile"
+
+      - name: Compile the linux kernel on the runner
         id: compile-kernel-step
         shell: bash
+        working-directory: kernel-source-host
         run: |
           set +e
 
-          docker rm -f kernel >/dev/null 2>&1 || true
+          bash .github/scripts/compile-kernel.sh \
+            "${{ steps.build-vars.outputs.target_profile }}" \
+            "${{ steps.build-vars.outputs.target_lto }}"
+          COMPILE_STATUS=$?
 
-          docker run -i --name kernel -d \
-            -v "${{ github.workspace }}/kernel-source-host:/container/workspace/kernel-source-container" \
-            -w /container/workspace/kernel-source-container \
-            kernel-linux-ps4:latest tail -f /dev/null
-
-          docker exec -i kernel bash <<EOF
-          set -e
-
-          TARGET_PROFILE="${{ steps.build-vars.outputs.target_profile }}"
-          TARGET_LTO="${{ steps.build-vars.outputs.target_lto }}"
-
-          echo "Executing build.sh with profile: \$TARGET_PROFILE"
-          echo "Executing build.sh with LTO: \$TARGET_LTO"
-
-          chmod +x build.sh
-          ./build.sh --option 3 use="\$TARGET_PROFILE" lto="\$TARGET_LTO"
-
-          echo "Packaging build artifacts..."
-
-          ARTIFACT_BASENAME="\$(cat out/artifact_name.txt 2>/dev/null || true)"
-          if [[ -z "\$ARTIFACT_BASENAME" ]]; then
-            ARTIFACT_BASENAME="Strawberry-\${TARGET_LTO}-\${TARGET_PROFILE}-LTS"
-          fi
-          ARTIFACT_ZIP_FILE="\${ARTIFACT_BASENAME}.zip"
-          ARTIFACT_TARGZ_FILE="\${ARTIFACT_BASENAME}.tar.gz"
-
-          (
-            cd out
-            zip -r "../\${ARTIFACT_ZIP_FILE}" bzImage .config
-          )
-
-          tar -cvzf "/container/workspace/kernel-source-container/\${ARTIFACT_TARGZ_FILE}" \
-            -C out bzImage .config --owner=0 --group=0
-
-          printf '%s\n' "\${ARTIFACT_ZIP_FILE}" > /container/workspace/kernel-source-container/artifact_zip_name.txt
-          printf '%s\n' "\${ARTIFACT_TARGZ_FILE}" > /container/workspace/kernel-source-container/artifact_targz_name.txt
-          EOF
-          DOCKER_EXEC_STATUS=$?
-
-          cd "${{ github.workspace }}/kernel-source-host"
-
-          if [ "$DOCKER_EXEC_STATUS" -ne 0 ]; then
-            echo "::error::kernel build failed inside container (exit $DOCKER_EXEC_STATUS)"
-            exit "$DOCKER_EXEC_STATUS"
+          if [ "$COMPILE_STATUS" -ne 0 ]; then
+            echo "::error::kernel build failed (exit $COMPILE_STATUS)"
+            exit "$COMPILE_STATUS"
           fi
 
           echo "compile-kernel-complete=true" >> "$GITHUB_OUTPUT"
@@ -219,36 +147,43 @@ jobs:
       - name: Remove compile error problem-matching
         run: echo "::remove-matcher owner=kernel-compile-docker::"
 
+      - name: "Notify: compile complete"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+        run: |
+          bash kernel-source-host/.github/scripts/notify.sh \
+            "compile complete for **${{ github.repository }}** \`#${{ github.run_number }}\` — profile ${{ steps.build-vars.outputs.target_profile }}, ${{ steps.build-vars.outputs.target_lto }}, packaging artifacts now"
+
       - name: Read Artifact Name
         id: read-artifact
         working-directory: kernel-source-host
         run: |
           ARTIFACT_ZIP_NAME="$(cat artifact_zip_name.txt 2>/dev/null || echo kernel.zip)"
-          ARTIFACT_TARGZ_NAME="$(cat artifact_targz_name.txt 2>/dev/null || echo kernel.tar.gz)"
           echo "pkg_zip_name=${ARTIFACT_ZIP_NAME}" >> "$GITHUB_OUTPUT"
-          echo "pkg_targz_name=${ARTIFACT_TARGZ_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload kernel image in zip to github actions artifacts
+      - name: Upload kernel package to github actions artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.read-artifact.outputs.pkg_zip_name }}
           path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_zip_name }}
           archive: false
 
-      - name: Upload kernel image in .tar.gz to github actions artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.read-artifact.outputs.pkg_targz_name }}
-          path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_targz_name }}
-          archive: false
+      - name: "Notify: artifact uploaded"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+        run: |
+          bash kernel-source-host/.github/scripts/notify.sh \
+            "**${{ github.repository }}** build \`#${{ github.run_number }}\` (\`${{ github.workflow }}\`) on branch \`${{ github.ref_name }}\` is done!
+          Artifact: https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/${{ steps.read-artifact.outputs.pkg_zip_name }}.zip"
 
-      - name: Discord Webhook Artifact Announcement
-        uses: tsickert/discord-webhook@v7.0.0
-        with:
-          webhook-url: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
-          content: |
-            Kernel build workflow run `#${{ github.run_number }}` `${{ github.workflow }}` on branch `${{ github.ref_name }}` is done!
-            Artifact: https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/${{ steps.read-artifact.outputs.pkg_zip_name }}.zip
+      - name: "Notify: build failed"
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+        run: |
+          bash kernel-source-host/.github/scripts/notify.sh \
+            "**${{ github.repository }}** build \`#${{ github.run_number }}\` (\`${{ github.workflow }}\`) on branch \`${{ github.ref_name }}\` FAILED
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Delete Cache of Github Workspace
         env:
@@ -259,7 +194,12 @@ jobs:
 
       - name: Save Cache of Github Workspace
         uses: actions/cache/save@v4
-        if: steps.compile-kernel-step.outputs.compile-kernel-complete
+        if: runner.environment != 'self-hosted' && steps.compile-kernel-step.outputs.compile-kernel-complete
         with:
           path: kernel-source-host
           key: ${{ steps.cache-restore-workspace.outputs.cache-primary-key }}
+
+      - name: Tear down swapfile (self-hosted)
+        if: always() && runner.environment == 'self-hosted'
+        run: |
+          bash kernel-source-host/.github/scripts/swap-self-hosted.sh disable
