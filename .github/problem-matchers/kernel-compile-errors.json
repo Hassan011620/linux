@@ -1,7 +1,7 @@
 {
   "problemMatcher": [
     {
-      "owner": "kernel-compile-docker",
+      "owner": "kernel-compile-errors",
       "pattern": [
         {
           "regexp": "^(?:\\+|\\-)?(?:/linux/)?(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
