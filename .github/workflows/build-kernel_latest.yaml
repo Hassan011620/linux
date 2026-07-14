@@ -114,7 +114,7 @@ jobs:
           swap-size-gb: ${{ steps.build-vars.outputs.swap_gb }}
 
       - name: Set up swapfile (self-hosted)
-        if: runner.environment == 'self-hosted'
+        if: runner.environment == 'self-hosted' && steps.build-vars.outputs.target_lto == 'FullLTO'
         run: |
           bash kernel-source-host/.github/scripts/swap-self-hosted.sh enable "${{ steps.build-vars.outputs.swap_gb }}"
 
@@ -145,7 +145,7 @@ jobs:
           set -e
 
       - name: Remove compile error problem-matching
-        run: echo "::remove-matcher owner=kernel-compile-docker::"
+        run: echo "::remove-matcher owner=kernel-compile-errors::"
 
       - name: "Notify: compile complete"
         env:
@@ -167,6 +167,7 @@ jobs:
           name: ${{ steps.read-artifact.outputs.pkg_zip_name }}
           path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_zip_name }}
           archive: false
+          retention-days: 14
 
       - name: "Notify: artifact uploaded"
         env:
