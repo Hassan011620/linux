@@ -12,6 +12,8 @@ on:
         options:
           - Server
           - General
+          - SlopMax
+          - Slopium
       lto:
         description: "LTO Variant"
         required: true

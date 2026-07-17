@@ -18,7 +18,7 @@ echo "Packaging build artifacts..."
 
 ARTIFACT_BASENAME="$(cat out/artifact_name.txt 2>/dev/null || true)"
 if [[ -z "${ARTIFACT_BASENAME}" ]]; then
-    ARTIFACT_BASENAME="Strawberry-${TARGET_LTO}-${TARGET_PROFILE}-LTS"
+    ARTIFACT_BASENAME="unknown-Strawberry-${TARGET_PROFILE}-${TARGET_LTO}"
 fi
 ARTIFACT_ZIP_FILE="${ARTIFACT_BASENAME}.zip"
 
