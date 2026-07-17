@@ -2,8 +2,10 @@
 
 # PS4-Linux Strawberry Builder
 # Supports two PS4-focused build profiles and two LTO flavors:
-#   server  — headless/services, HZ=250, PREEMPT_VOLUNTARY, performance governor
-#   general — desktop/gaming, HZ=250, PREEMPT=y, BORE, schedutil/reflex
+#   server   — headless/services, HZ=250, PREEMPT_VOLUNTARY, performance governor
+#   general  — desktop/gaming, HZ=250, PREEMPT=y, BORE, schedutil/reflex
+#   slopmax  — general + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
+#   slopium  — server + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
 #   ThinLTO / FullLTO selectable via lto=ThinLTO or lto=FullLTO
 #
 # Usage:
@@ -12,6 +14,8 @@
 #   ./build.sh --option N use=Server
 #   ./build.sh --option N lto=ThinLTO
 #   ./build.sh --option N use=General lto=FullLTO
+#   ./build.sh --option N use=SlopMax
+#   ./build.sh --option N use=Slopium
 #   ./build.sh --option 7             Show/switch build profile
 #   ./build.sh --option 8             Show/switch LTO flavor
 
@@ -44,6 +48,15 @@ lto_label() {
     else
         echo "ThinLTO"
     fi
+}
+
+profile_label() {
+    case "$PROFILE" in
+        general) echo "General" ;;
+        slopmax) echo "SlopMax" ;;
+        slopium) echo "Slopium" ;;
+        *)       echo "Server" ;;
+    esac
 }
 
 ensure_extra_firmware_blob() {
@@ -111,8 +124,10 @@ for arg in "$@"; do
             case "${PROFILE_ARG,,}" in
                 server) PROFILE="server" ;;
                 general) PROFILE="general" ;;
+                slopmax) PROFILE="slopmax" ;;
+                slopium) PROFILE="slopium" ;;
                 *)
-                    echo "Unknown build profile: ${PROFILE_ARG}. Valid: Server, General"
+                    echo "Unknown build profile: ${PROFILE_ARG}. Valid: Server, General, SlopMax, Slopium"
                     exit 1
                     ;;
             esac
@@ -145,7 +160,12 @@ if [[ $# -ge 2 && "$1" == "--option" ]]; then
             echo "Current build profile: ${PROFILE}"
             read -r -p "Switch profile? (y/n): " SWITCH
             if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                [[ "$PROFILE" == "server" ]] && PROFILE="general" || PROFILE="server"
+                case "$PROFILE" in
+                    server)  PROFILE="general" ;;
+                    general) PROFILE="slopmax" ;;
+                    slopmax) PROFILE="slopium" ;;
+                    slopium) PROFILE="server" ;;
+                esac
                 echo "Profile switched to: ${PROFILE}"
             fi
             exit 0
@@ -209,11 +229,17 @@ if [[ "$SKIP_MENU" == "0" ]]; then
                 echo "Select build profile:"
                 echo "  1) Server  (max throughput, headless)"
                 echo "  2) General (gaming/desktop latency)"
-                read -r -p "Profile [1-2]: " PROFILE_CHOICE
+                echo "  3) SlopMax (General + KVM support)"
+                echo "  4) Slopium (Server + KVM support)"
+                read -r -p "Profile [1-4]: " PROFILE_CHOICE
                 if [[ "$PROFILE_CHOICE" == "1" ]]; then
                     PROFILE="server"
                 elif [[ "$PROFILE_CHOICE" == "2" ]]; then
                     PROFILE="general"
+                elif [[ "$PROFILE_CHOICE" == "3" ]]; then
+                    PROFILE="slopmax"
+                elif [[ "$PROFILE_CHOICE" == "4" ]]; then
+                    PROFILE="slopium"
                 else
                     echo -e "\e[1;31m[!] Invalid input.\e[0m Press enter to continue."
                     read -r
@@ -224,7 +250,11 @@ if [[ "$SKIP_MENU" == "0" ]]; then
                 echo "Current build profile: ${PROFILE}"
                 read -r -p "Switch profile? (y/n): " SWITCH
                 if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                    [[ "$PROFILE" == "server" ]] && PROFILE="general" || PROFILE="server"
+                    case "$PROFILE" in
+                        server)  PROFILE="general" ;;
+                        general) PROFILE="slopmax" ;;
+                        slopmax) PROFILE="server" ;;
+                    esac
                     echo "Profile switched to: ${PROFILE}"
                     sleep 1
                 fi
@@ -341,7 +371,7 @@ fi
 if [[ "$DO_BUILD" == "1" ]]; then
     echo -e "\e[1;34m[*]\e[0m Applying invariant config..."
 
-    LOCALVERSION_SUFFIX="-Strawberry-$(lto_label)"
+    LOCALVERSION_SUFFIX="-Strawberry-$(profile_label)-$(lto_label)"
 
     # Build system / LTO
     if [[ "$LTO_FLAVOR" == "full" ]]; then
@@ -519,7 +549,7 @@ if [[ "$DO_BUILD" == "1" ]]; then
     scripts/config --disable CONFIG_DM_DEBUG
     scripts/config --disable CONFIG_BLK_DEBUG_FS
 
-    if [[ "$PROFILE" == "server" ]]; then
+    if [[ "$PROFILE" == "server" || "$PROFILE" == "slopium" ]]; then
         echo -e "\e[1;34m[*]\e[0m Applying server profile..."
 
         scripts/config --disable CONFIG_SCHED_BORE
@@ -620,6 +650,14 @@ if [[ "$DO_BUILD" == "1" ]]; then
         scripts/config --set-str CONFIG_DEFAULT_NET_SCH "fq_codel"
     fi
 
+    if [[ "$PROFILE" == "slopmax" || "$PROFILE" == "slopium" ]]; then
+        echo -e "\e[1;34m[*]\e[0m Applying KVM support..."
+
+        scripts/config --enable  CONFIG_VIRTUALIZATION
+        scripts/config --enable  CONFIG_KVM
+        scripts/config --enable  CONFIG_KVM_AMD
+    fi
+
     echo -e "\e[1;34m[*]\e[0m Running olddefconfig..."
     make "${MAKE_OPTS[@]}" olddefconfig
 
@@ -645,18 +683,10 @@ if [[ "$DO_BUILD" == "1" ]]; then
     KVER="$(cat include/config/kernel.release 2>/dev/null || echo "unknown")"
     LTO_LABEL="${CURRENT_LTO_LABEL}"
 
-    PROFILE_LABEL="Server"
-    if [[ "$PROFILE" == "general" ]]; then
-        PROFILE_LABEL="General"
-    fi
-
+    PROFILE_LABEL="$(profile_label)"
     KVER_BASE="${KVER%%-*}"
-    RELEASE_TRACK="Mainline"
-    if [[ "$KVER_BASE" == 6.18.* ]]; then
-        RELEASE_TRACK="LTS"
-    fi
 
-    ARTIFACT_BASENAME="Strawberry-${LTO_LABEL}-${PROFILE_LABEL}-${RELEASE_TRACK}-${KVER}"
+    ARTIFACT_BASENAME="${KVER_BASE}-Strawberry-${PROFILE_LABEL}-${LTO_LABEL}"
     printf '%s\n' "${ARTIFACT_BASENAME}" > "${OUTPUT_DIR}/artifact_name.txt"
 
     echo ""
@@ -667,7 +697,7 @@ if [[ "$DO_BUILD" == "1" ]]; then
     echo -e "\e[1;32m╚══════════════════════════════════════════════════╝\e[0m"
     echo ""
 
-    if [[ "$PROFILE" == "general" ]]; then
+    if [[ "$PROFILE" == "general" || "$PROFILE" == "slopmax" ]]; then
         echo "Kernel cmdline (add to your kexec invocation):"
         echo "  isolcpus=2-7 nohz_full=2-7 rcu_nocbs=2-7 irqaffinity=0-1 threadirqs"
         echo ""
