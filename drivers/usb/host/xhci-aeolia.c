@@ -101,6 +101,14 @@ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
 	if (retval)
 		goto put_usb3_hcd;
 
+	{
+		struct usb_hcd *usb3_hcd = xhci_get_usb3_hcd(xhci);
+
+		if (usb3_hcd && HCC_MAX_PSA(xhci->hcc_params) >= 4 &&
+		    !(xhci->quirks & XHCI_BROKEN_STREAMS))
+			usb3_hcd->can_do_streams = 1;
+	}
+
 	retval = usb_add_hcd(xhci->shared_hcd, irq, IRQF_SHARED);
 	if (retval)
 		goto dealloc_usb2_hcd;
