@@ -493,6 +493,8 @@ if [[ "$DO_BUILD" == "1" ]]; then
     scripts/config --disable CONFIG_IOMMU_DEFAULT_DMA_STRICT
     scripts/config --enable  CONFIG_IOMMU_DEFAULT_DMA_LAZY
 
+    scripts/config --enable  CONFIG_IO_URING
+
     # I/O schedulers
     scripts/config --enable  CONFIG_MQ_IOSCHED_DEADLINE
     scripts/config --enable  CONFIG_MQ_IOSCHED_KYBER
@@ -500,6 +502,12 @@ if [[ "$DO_BUILD" == "1" ]]; then
     scripts/config --enable  CONFIG_BFQ_GROUP_IOSCHED
     scripts/config --enable  CONFIG_BLK_WBT
     scripts/config --enable  CONFIG_BLK_WBT_MQ
+
+    # Swap/memory compression
+    scripts/config --disable CONFIG_ZSWAP_COMPRESSOR_DEFAULT_LZO
+    scripts/config --enable  CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD
+    scripts/config --set-str CONFIG_ZSWAP_COMPRESSOR_DEFAULT "zstd"
+    scripts/config --enable  CONFIG_ZRAM_DEF_COMP_ZSTD
 
     # Strip debug overhead
     scripts/config --disable CONFIG_DMADEVICES_DEBUG
