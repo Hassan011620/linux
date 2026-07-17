@@ -6,8 +6,10 @@ profile_input="$(echo "${1:-Server}" | tr '[:upper:]' '[:lower:]')"
 lto_input="$(echo "${2:-ThinLTO}" | tr '[:upper:]' '[:lower:]')"
 
 case "$profile_input" in
-    general) target_profile="General" ;;
-    *)       target_profile="Server" ;;
+    general)  target_profile="General" ;;
+    slopmax)  target_profile="SlopMax" ;;
+    slopium)  target_profile="Slopium" ;;
+    *)        target_profile="Server" ;;
 esac
 
 case "$lto_input" in
@@ -16,10 +18,14 @@ case "$lto_input" in
 esac
 
 case "${target_lto}:${target_profile}" in
-    ThinLTO:Server) swap_gb="16" ;;
-    ThinLTO:General) swap_gb="20" ;;
-    FullLTO:Server) swap_gb="24" ;;
-    FullLTO:General) swap_gb="28" ;;
+    ThinLTO:Server)   swap_gb="16" ;;
+    ThinLTO:General)  swap_gb="20" ;;
+    ThinLTO:SlopMax)  swap_gb="22" ;;
+    ThinLTO:Slopium)  swap_gb="18" ;;
+    FullLTO:Server)   swap_gb="24" ;;
+    FullLTO:General)  swap_gb="28" ;;
+    FullLTO:SlopMax)  swap_gb="30" ;;
+    FullLTO:Slopium)  swap_gb="26" ;;
 esac
 
 echo "target_profile=${target_profile}"
