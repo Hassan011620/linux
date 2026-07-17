@@ -704,7 +704,7 @@ static void __init dmi_scan_machine(void)
 
 			if (!dmi_smbios3_present(buf)) {
 				dmi_available = 1;
-				return;
+				goto out;
 			}
 		}
 		if (efi.smbios == EFI_INVALID_TABLE_ADDR)
@@ -722,7 +722,7 @@ static void __init dmi_scan_machine(void)
 
 		if (!dmi_present(buf)) {
 			dmi_available = 1;
-			return;
+			goto out;
 		}
 	} else if (IS_ENABLED(CONFIG_DMI_SCAN_MACHINE_NON_EFI_FALLBACK)) {
 		p = dmi_early_remap(SMBIOS_ENTRY_POINT_SCAN_START, 0x10000);
@@ -739,7 +739,7 @@ static void __init dmi_scan_machine(void)
 			if (!dmi_smbios3_present(buf)) {
 				dmi_available = 1;
 				dmi_early_unmap(p, 0x10000);
-				return;
+				goto out;
 			}
 			memcpy(buf, buf + 16, 16);
 		}
@@ -757,7 +757,7 @@ static void __init dmi_scan_machine(void)
 			if (!dmi_present(buf)) {
 				dmi_available = 1;
 				dmi_early_unmap(p, 0x10000);
-				return;
+				goto out;
 			}
 			memcpy(buf, buf + 16, 16);
 		}
@@ -766,14 +766,13 @@ static void __init dmi_scan_machine(void)
  error:
 	pr_info("not present or invalid.\n");
 
+ out:
 #ifdef CONFIG_PS4_DMI_SPOOF
-	if (ps4_dmi_is_ps4()) {
-		dmi_available = 1;
-		ps4_dmi_populate(dmi_ident);
-		dmi_format_ids(dmi_ids_string, sizeof(dmi_ids_string));
-		return;
-	}
+	dmi_available = 1;
+	ps4_dmi_populate(dmi_ident);
+	dmi_format_ids(dmi_ids_string, sizeof(dmi_ids_string));
 #endif
+	return;
 }
 
 static __ro_after_init BIN_ATTR_SIMPLE_ADMIN_RO(smbios_entry_point);
