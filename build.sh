@@ -601,20 +601,6 @@ if [[ "$DO_BUILD" == "1" ]]; then
         scripts/config --disable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
         scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
 
-        scripts/config --disable CONFIG_OVERLAY_FS
-        scripts/config --disable CONFIG_VETH
-        scripts/config --disable CONFIG_BRIDGE_NETFILTER
-        scripts/config --disable CONFIG_BRIDGE
-        scripts/config --disable CONFIG_IP6_NF_IPTABLES
-        scripts/config --disable CONFIG_IP_NF_IPTABLES
-        scripts/config --disable CONFIG_NF_TABLES_IPV6
-        scripts/config --disable CONFIG_NF_TABLES_IPV4
-        scripts/config --disable CONFIG_NF_TABLES_INET
-        scripts/config --disable CONFIG_NF_TABLES
-        scripts/config --disable CONFIG_NETFILTER_XTABLES
-        scripts/config --disable CONFIG_NETFILTER_ADVANCED
-        scripts/config --disable CONFIG_NETFILTER
-
         scripts/config --disable CONFIG_PSI
         scripts/config --set-str CONFIG_DEFAULT_IOSCHED "bfq"
 
