@@ -28,8 +28,8 @@ FIRMWARE_URL_OVERRIDES["mrvl/sd8797_uapsta.bin"]="useCustomFirmware" # Prevent d
 # This version is the closest to that we have (besides the one packed in Orbis Torus (WiFi+BT) firmware).
 
 # PS4 Jaguar tuning
-export KCFLAGS="-march=btver2 -mtune=btver2 -Os"
-export KAFLAGS="-march=btver2 -mtune=btver2 -Os"
+export KCFLAGS="-march=btver2 -mtune=btver2 -O3"
+export KAFLAGS="-march=btver2 -mtune=btver2"
 
 export HOSTCFLAGS="-Wno-error=incompatible-pointer-types-discards-qualifiers"
 
