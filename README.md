@@ -201,7 +201,9 @@ GitHub Actions:
 Profile summary:
 
 - `Server`: headless/services-oriented, `HZ=250`, `PREEMPT_VOLUNTARY`, performance governor, and container/netfilter stack kept enabled.
-- `General`: desktop/gaming-oriented, `HZ=250`, full `PREEMPT`, BORE enabled, schedutil/reflex path, cgroup and namespace support enabled, `DMI`/`fw_cfg` sysfs enabled, and netfilter stack stripped.
+- `General`: desktop/gaming-oriented, `HZ=250`, full `PREEMPT`, schedutil/reflex path, cgroup and namespace support enabled, `DMI`/`fw_cfg` sysfs enabled, netfilter/bridge/veth/overlayfs kept enabled for container networking (Waydroid etc).
+- `SlopMax`: General + KVM/KVM_AMD for running VMs on top.
+- `Slopium`: Server + KVM/KVM_AMD for running VMs on top.
 
 Local build:
 
