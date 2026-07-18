@@ -1007,6 +1007,7 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 	struct drm_display_mode *newmode;
 	int dpcd_ret = -ENODEV;
 	int count = 0;
+	const char *edid_source = NULL;
 
 	DRM_DEBUG_KMS("ps4_bridge_get_modes\n");
 
@@ -1019,9 +1020,11 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 
 		if (request_firmware(&fw, "edid/my_edid.bin",
 				      connector->dev->dev) == 0 && fw) {
-			DRM_DEBUG_KMS("ps4_bridge_get_modes: using firmware EDID "
-				      "(%zu bytes)\n", fw->size);
+			drm_info(dev, "ps4_bridge: EDID loaded from firmware "
+				 "(edid/my_edid.bin), %zu bytes\n", fw->size);
 			drm_edid = drm_edid_alloc(fw->data, fw->size);
+			if (drm_edid)
+				edid_source = "firmware";
 			release_firmware(fw);
 		} else {
 			DRM_DEBUG_KMS("ps4_bridge_get_modes: no firmware EDID "
@@ -1072,6 +1075,10 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 			drm_edid = drm_edid_read_custom(connector,
 							ps4_bridge_read_edid_block_smbus,
 							ddc);
+			if (drm_edid)
+				edid_source = "AUX SMBUS DDC";
+		} else {
+			edid_source = "AUX DDC";
 		}
 	}
 
@@ -1090,6 +1097,10 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 			drm_edid = drm_edid_read_custom(connector,
 							ps4_bridge_read_edid_block_smbus,
 							ddc);
+			if (drm_edid)
+				edid_source = "native SMBUS DDC";
+		} else {
+			edid_source = "native DDC";
 		}
 	}
 
@@ -1110,10 +1121,14 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 		DRM_DEBUG_KMS("ps4_bridge_get_modes: DDC failed, using cached EDID\n");
 		drm_edid = drm_edid_alloc(g_bridge->cached_edid,
 					  g_bridge->cached_edid_size);
+		if (drm_edid)
+			edid_source = "cached";
 	}
 
 edid_ready:
 	if (drm_edid) {
+		struct drm_display_mode *mode;
+
 		raw_edid = drm_edid_raw(drm_edid);
 		amdgpu_connector->edid = drm_edid_dup(drm_edid);
 		drm_edid_connector_update(connector, drm_edid);
@@ -1123,13 +1138,18 @@ edid_ready:
 			drm_mode_probed_add(connector, newmode);
 			count++;
 		}
-		DRM_DEBUG_KMS("ps4_bridge_get_modes: EDID ok, %d modes, extensions=%u\n",
-			      count, raw_edid ? raw_edid->extensions : 0);
+		drm_info(dev, "ps4_bridge: EDID loaded from %s, %d modes, %u extension block(s)\n",
+			 edid_source ? edid_source : "unknown", count,
+			 raw_edid ? raw_edid->extensions : 0);
+		list_for_each_entry(mode, &connector->probed_modes, head)
+			drm_info(dev, "ps4_bridge: mode %s %dx%d@%dHz\n",
+				 mode->name, mode->hdisplay, mode->vdisplay,
+				 drm_mode_vrefresh(mode));
 		drm_edid_free(drm_edid);
 		return count;
 	}
 
-	DRM_DEBUG_KMS("ps4_bridge_get_modes: no EDID, using fallback modes\n");
+	drm_info(dev, "ps4_bridge: no EDID available, using fallback modes\n");
 
 fallback_modes:
 	newmode = drm_mode_duplicate(dev, &mode_1080p);
