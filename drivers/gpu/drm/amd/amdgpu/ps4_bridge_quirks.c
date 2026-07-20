@@ -12,8 +12,6 @@ struct ps4_bridge_monitor_quirk {
 
 static const struct ps4_bridge_monitor_quirk ps4_bridge_monitor_quirks[] = {
 	{ 0x4a8b, 0x1366, PS4_BRIDGE_QUIRK_MODE_1080P60 },
-	{ 0x5a63, 0x8a31, PS4_BRIDGE_QUIRK_MODE_720P },
-	{ 0x3669, 0x40b5, PS4_BRIDGE_QUIRK_MODE_1080P60 | PS4_BRIDGE_QUIRK_MODE_1080P100 },
 };
 
 unsigned int ps4_bridge_quirk_forced_modes(const struct edid *edid)

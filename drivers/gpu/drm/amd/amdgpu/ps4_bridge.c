@@ -968,12 +968,6 @@ static const struct drm_display_mode mode_1080p = {
 		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
 	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
 };
-static const struct drm_display_mode mode_1080p100 = {
-	DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 232750, 1920, 1968,
-		 2000, 2080, 0, 1080, 1083, 1088, 1119, 0,
-		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
-	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
-};
 
 int ps4_bridge_get_modes(struct drm_connector *connector)
 {
@@ -1126,21 +1120,6 @@ edid_ready:
 						count++;
 					}
 				}
-				if (forced & PS4_BRIDGE_QUIRK_MODE_1080P100) {
-					newmode = drm_mode_duplicate(dev, &mode_1080p100);
-					if (newmode) {
-						drm_mode_probed_add(connector, newmode);
-						count++;
-					}
-				}
-				if (forced & PS4_BRIDGE_QUIRK_MODE_720P) {
-					newmode = drm_mode_duplicate(dev, &mode_720p);
-					if (newmode) {
-						drm_mode_probed_add(connector, newmode);
-						count++;
-					}
-				}
-
 				return count;
 			}
 		}
