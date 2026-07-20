@@ -968,6 +968,12 @@ static const struct drm_display_mode mode_1080p = {
 		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
 	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
 };
+static const struct drm_display_mode mode_1080p100 = {
+	DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 232750, 1920, 1968,
+		 2000, 2080, 0, 1080, 1083, 1088, 1119, 0,
+		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
+};
 
 int ps4_bridge_get_modes(struct drm_connector *connector)
 {
@@ -1106,21 +1112,35 @@ edid_ready:
 		raw_edid = drm_edid_raw(drm_edid);
 
 		{
-			enum ps4_bridge_forced_mode forced = ps4_bridge_quirk_forced_mode(raw_edid);
+			unsigned int forced = ps4_bridge_quirk_forced_modes(raw_edid);
 
-			if (forced != PS4_BRIDGE_FORCED_MODE_NONE) {
-				const struct drm_display_mode *quirk_mode =
-					forced == PS4_BRIDGE_FORCED_MODE_720P ? &mode_720p : &mode_1080p;
-
-				drm_info(dev, "ps4_bridge: EDID from %s is known-bad, forcing %s only\n",
-					 edid_source ? edid_source : "unknown",
-					 forced == PS4_BRIDGE_FORCED_MODE_720P ? "720p" : "1080p");
+			if (forced) {
+				drm_info(dev, "ps4_bridge: EDID from %s is known-bad, forcing fixed mode set\n",
+					 edid_source ? edid_source : "unknown");
 				drm_edid_free(drm_edid);
-				newmode = drm_mode_duplicate(dev, quirk_mode);
-				if (newmode) {
-					drm_mode_probed_add(connector, newmode);
-					count++;
+
+				if (forced & PS4_BRIDGE_QUIRK_MODE_1080P60) {
+					newmode = drm_mode_duplicate(dev, &mode_1080p);
+					if (newmode) {
+						drm_mode_probed_add(connector, newmode);
+						count++;
+					}
 				}
+				if (forced & PS4_BRIDGE_QUIRK_MODE_1080P100) {
+					newmode = drm_mode_duplicate(dev, &mode_1080p100);
+					if (newmode) {
+						drm_mode_probed_add(connector, newmode);
+						count++;
+					}
+				}
+				if (forced & PS4_BRIDGE_QUIRK_MODE_720P) {
+					newmode = drm_mode_duplicate(dev, &mode_720p);
+					if (newmode) {
+						drm_mode_probed_add(connector, newmode);
+						count++;
+					}
+				}
+
 				return count;
 			}
 		}
