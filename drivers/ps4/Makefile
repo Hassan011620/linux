@@ -6,7 +6,8 @@ obj-y += ps4-apcie.o \
     ps4-apcie-uart.o \
     ps4-apcie-icc.o \
     ps4-apcie-pwrbutton.o \
-    icc/i2c.o
+    icc/i2c.o \
+    icc/edid_test.o
 obj-y += ps4-hwinfo.o
 obj-y += ps4-led.o
 obj-y += ps4-fan.o
