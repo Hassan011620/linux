@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # PS4-Linux Strawberry Builder
-# Supports two PS4-focused build profiles and two LTO flavors:
+# Supports two PS4-focused build profiles and three LTO flavors:
 #   server   — headless/services, HZ=250, PREEMPT_VOLUNTARY, performance governor
 #   general  — desktop/gaming, HZ=250, PREEMPT=y, schedutil/reflex
 #   slopmax  — general + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
 #   slopium  — server + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
-#   ThinLTO / FullLTO selectable via lto=ThinLTO or lto=FullLTO
+#   NoLTO / ThinLTO / FullLTO selectable via lto=NoLTO, lto=ThinLTO, lto=FullLTO
 #
 # Usage:
 #   ./build.sh
@@ -45,9 +45,25 @@ MAX_JOBS="$(nproc)"
 lto_label() {
     if [[ "$LTO_FLAVOR" == "full" ]]; then
         echo "FullLTO"
+    elif [[ "$LTO_FLAVOR" == "none" ]]; then
+        echo "NoLTO"
     else
         echo "ThinLTO"
     fi
+}
+
+apply_config_file() {
+    local file="$1"
+    local action name value
+    while read -r action name value; do
+        [[ -z "$action" || "$action" == \#* ]] && continue
+        case "$action" in
+            enable)  scripts/config --enable  "$name" ;;
+            disable) scripts/config --disable "$name" ;;
+            set-val) scripts/config --set-val "$name" "$value" ;;
+            set-str) scripts/config --set-str "$name" "$value" ;;
+        esac
+    done < "$file"
 }
 
 profile_label() {
@@ -137,8 +153,9 @@ for arg in "$@"; do
             case "${LTO_ARG,,}" in
                 thinlto|thin) LTO_FLAVOR="thin" ;;
                 fulllto|full) LTO_FLAVOR="full" ;;
+                nolto|none|no|off|disabled) LTO_FLAVOR="none" ;;
                 *)
-                    echo "Unknown LTO flavor: ${LTO_ARG}. Valid: ThinLTO, FullLTO"
+                    echo "Unknown LTO flavor: ${LTO_ARG}. Valid: NoLTO, ThinLTO, FullLTO"
                     exit 1
                     ;;
             esac
@@ -174,7 +191,11 @@ if [[ $# -ge 2 && "$1" == "--option" ]]; then
             echo "Current LTO flavor: $(lto_label)"
             read -r -p "Switch LTO flavor? (y/n): " SWITCH
             if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                [[ "$LTO_FLAVOR" == "thin" ]] && LTO_FLAVOR="full" || LTO_FLAVOR="thin"
+                case "$LTO_FLAVOR" in
+                    thin) LTO_FLAVOR="full" ;;
+                    full) LTO_FLAVOR="none" ;;
+                    none) LTO_FLAVOR="thin" ;;
+                esac
                 echo "LTO flavor switched to: $(lto_label)"
             fi
             exit 0
@@ -264,7 +285,11 @@ if [[ "$SKIP_MENU" == "0" ]]; then
                 echo "Current LTO flavor: $(lto_label)"
                 read -r -p "Switch LTO flavor? (y/n): " SWITCH
                 if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                    [[ "$LTO_FLAVOR" == "thin" ]] && LTO_FLAVOR="full" || LTO_FLAVOR="thin"
+                    case "$LTO_FLAVOR" in
+                        thin) LTO_FLAVOR="full" ;;
+                        full) LTO_FLAVOR="none" ;;
+                        none) LTO_FLAVOR="thin" ;;
+                    esac
                     echo "LTO flavor switched to: $(lto_label)"
                     sleep 1
                 fi
@@ -374,15 +399,8 @@ if [[ "$DO_BUILD" == "1" ]]; then
     LOCALVERSION_SUFFIX="-Strawberry-$(profile_label)-$(lto_label)"
 
     # Build system / LTO
-    if [[ "$LTO_FLAVOR" == "full" ]]; then
-        echo -e "\e[1;34m[*]\e[0m Enabling FullLTO..."
-        scripts/config --disable CONFIG_LTO_CLANG_THIN
-        scripts/config --enable  CONFIG_LTO_CLANG_FULL
-    else
-        echo -e "\e[1;34m[*]\e[0m Enabling ThinLTO..."
-        scripts/config --enable  CONFIG_LTO_CLANG_THIN
-        scripts/config --disable CONFIG_LTO_CLANG_FULL
-    fi
+    echo -e "\e[1;34m[*]\e[0m Enabling $(lto_label)..."
+    apply_config_file "configs/lto-${LTO_FLAVOR}.cfg"
     scripts/config --disable CONFIG_LOCALVERSION_AUTO
     scripts/config --set-str CONFIG_LOCALVERSION "${LOCALVERSION_SUFFIX}"
 
@@ -551,107 +569,15 @@ if [[ "$DO_BUILD" == "1" ]]; then
 
     if [[ "$PROFILE" == "server" || "$PROFILE" == "slopium" ]]; then
         echo -e "\e[1;34m[*]\e[0m Applying server profile..."
-
-        scripts/config --disable CONFIG_SCHED_AUTOGROUP
-        scripts/config --disable CONFIG_CPU_FREQ_GOV_REFLEX
-
-        scripts/config --disable CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
-        scripts/config --disable CONFIG_CPU_FREQ_GOV_SCHEDUTIL
-        scripts/config --enable  CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
-        scripts/config --enable  CONFIG_CPU_FREQ_GOV_PERFORMANCE
-
-        scripts/config --disable CONFIG_HZ_1000
-        scripts/config --disable CONFIG_HZ_300
-        scripts/config --disable CONFIG_HZ_100
-        scripts/config --enable  CONFIG_HZ_250
-        scripts/config --set-val CONFIG_HZ 250
-
-        scripts/config --enable  CONFIG_NO_HZ_IDLE
-        scripts/config --disable CONFIG_NO_HZ_FULL
-
-        scripts/config --disable CONFIG_PREEMPT
-        scripts/config --enable  CONFIG_PREEMPT_VOLUNTARY
-        scripts/config --disable CONFIG_PREEMPT_NONE
-
-        scripts/config --enable  CONFIG_PSI
-        scripts/config --enable  CONFIG_PSI_DEFAULT_DISABLED
-
-        scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE
-        scripts/config --disable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
-        scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
-
-        scripts/config --enable  CONFIG_NETFILTER
-        scripts/config --enable  CONFIG_NETFILTER_ADVANCED
-        scripts/config --enable  CONFIG_NETFILTER_XTABLES
-        scripts/config --enable  CONFIG_NF_TABLES
-        scripts/config --enable  CONFIG_NF_TABLES_INET
-        scripts/config --enable  CONFIG_NF_TABLES_IPV4
-        scripts/config --enable  CONFIG_NF_TABLES_IPV6
-        scripts/config --enable  CONFIG_IP_NF_IPTABLES
-        scripts/config --enable  CONFIG_IP6_NF_IPTABLES
-        scripts/config --enable  CONFIG_BRIDGE
-        scripts/config --enable  CONFIG_BRIDGE_NETFILTER
-        scripts/config --enable  CONFIG_VETH
-        scripts/config --enable  CONFIG_OVERLAY_FS
-
-        scripts/config --set-str CONFIG_DEFAULT_IOSCHED "mq-deadline"
-
-        scripts/config --enable  CONFIG_DEFAULT_FQ
-        scripts/config --disable CONFIG_DEFAULT_FQ_CODEL
-        scripts/config --disable CONFIG_DEFAULT_FQ_PIE
-        scripts/config --disable CONFIG_DEFAULT_SFQ
-        scripts/config --disable CONFIG_DEFAULT_PFIFO_FAST
-        scripts/config --set-str CONFIG_DEFAULT_NET_SCH "fq"
+        apply_config_file "configs/tuning-server.cfg"
     else
         echo -e "\e[1;34m[*]\e[0m Applying general/gaming profile..."
-
-        scripts/config --disable CONFIG_CPU_MITIGATIONS
-
-        # Desktop userspace compatibility
-        scripts/config --enable  CONFIG_DMIID
-        scripts/config --enable  CONFIG_DMI_SYSFS
-        scripts/config --enable  CONFIG_FW_CFG_SYSFS
-
-        scripts/config --enable  CONFIG_CPU_FREQ_GOV_REFLEX
-        scripts/config --enable  CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
-        scripts/config --enable  CONFIG_CPU_FREQ_GOV_SCHEDUTIL
-        scripts/config --disable CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
-
-        scripts/config --enable  CONFIG_HZ_250
-        scripts/config --disable CONFIG_HZ_300
-        scripts/config --disable CONFIG_HZ_100
-        scripts/config --disable CONFIG_HZ_1000
-        scripts/config --set-val CONFIG_HZ 250
-        scripts/config --enable  CONFIG_NO_HZ_IDLE
-        scripts/config --enable  CONFIG_NO_HZ_FULL
-        scripts/config --enable  CONFIG_RCU_NOCB_CPU
-        scripts/config --enable  CONFIG_RCU_NOCB_CPU_DEFAULT_ALL
-
-        scripts/config --enable  CONFIG_PREEMPT
-        scripts/config --disable CONFIG_PREEMPT_VOLUNTARY
-        scripts/config --disable CONFIG_PREEMPT_NONE
-
-        scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE
-        scripts/config --disable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
-        scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
-
-        scripts/config --disable CONFIG_PSI
-        scripts/config --set-str CONFIG_DEFAULT_IOSCHED "bfq"
-
-        scripts/config --enable  CONFIG_DEFAULT_FQ_CODEL
-        scripts/config --disable CONFIG_DEFAULT_FQ
-        scripts/config --disable CONFIG_DEFAULT_FQ_PIE
-        scripts/config --disable CONFIG_DEFAULT_SFQ
-        scripts/config --disable CONFIG_DEFAULT_PFIFO_FAST
-        scripts/config --set-str CONFIG_DEFAULT_NET_SCH "fq_codel"
+        apply_config_file "configs/tuning-general.cfg"
     fi
 
     if [[ "$PROFILE" == "slopmax" || "$PROFILE" == "slopium" ]]; then
         echo -e "\e[1;34m[*]\e[0m Applying KVM support..."
-
-        scripts/config --enable  CONFIG_VIRTUALIZATION
-        scripts/config --enable  CONFIG_KVM
-        scripts/config --enable  CONFIG_KVM_AMD
+        apply_config_file "configs/kvm.cfg"
     fi
 
     echo -e "\e[1;34m[*]\e[0m Running olddefconfig..."
