@@ -13,11 +13,16 @@ case "$profile_input" in
 esac
 
 case "$lto_input" in
-    fulllto|full) target_lto="FullLTO" ;;
-    *)            target_lto="ThinLTO" ;;
+    fulllto|full)      target_lto="FullLTO" ;;
+    nolto|none|no|off) target_lto="NoLTO" ;;
+    *)                 target_lto="ThinLTO" ;;
 esac
 
 case "${target_lto}:${target_profile}" in
+    NoLTO:Server)     swap_gb="16" ;;
+    NoLTO:General)    swap_gb="20" ;;
+    NoLTO:SlopMax)    swap_gb="22" ;;
+    NoLTO:Slopium)    swap_gb="18" ;;
     ThinLTO:Server)   swap_gb="16" ;;
     ThinLTO:General)  swap_gb="20" ;;
     ThinLTO:SlopMax)  swap_gb="22" ;;
