@@ -9,15 +9,13 @@
 #   NoLTO / ThinLTO / FullLTO selectable via lto=NoLTO, lto=ThinLTO, lto=FullLTO
 #
 # Usage:
-#   ./build.sh
 #   ./build.sh --option N
 #   ./build.sh --option N use=Server
 #   ./build.sh --option N lto=ThinLTO
-#   ./build.sh --option N use=General lto=FullLTO
+#   ./build.sh --option N use=General lto=FullLTO jobs=8
 #   ./build.sh --option N use=SlopMax
 #   ./build.sh --option N use=Slopium
-#   ./build.sh --option 7             Show/switch build profile
-#   ./build.sh --option 8             Show/switch LTO flavor
+#     N: 1=build  2=fetch firmware  3=both
 
 set -euo pipefail
 
@@ -131,8 +129,9 @@ validate_extra_firmware_blob() {
 }
 
 # Parse optional selectors in any position:
-#   use=Server/use=General
-#   lto=ThinLTO/lto=FullLTO
+#   use=Server/use=General/use=SlopMax/use=Slopium
+#   lto=NoLTO/lto=ThinLTO/lto=FullLTO
+#   jobs=N
 for arg in "$@"; do
     case "$arg" in
         use=*)
@@ -160,147 +159,34 @@ for arg in "$@"; do
                     ;;
             esac
             ;;
+        jobs=*)
+            JOBS_ARG="${arg#jobs=}"
+            if [[ "$JOBS_ARG" =~ ^[0-9]+$ ]] && [[ "$JOBS_ARG" -ge 1 ]] && [[ "$JOBS_ARG" -le "$MAX_JOBS" ]]; then
+                JOBS="$JOBS_ARG"
+            else
+                echo "Invalid jobs value: ${JOBS_ARG}. Must be 1-${MAX_JOBS}."
+                exit 1
+            fi
+            ;;
     esac
 done
 
-if [[ $# -ge 2 && "$1" == "--option" ]]; then
-    CHOICE="$2"
-    case "$CHOICE" in
-        1) DO_BUILD=1; DO_FETCH=0 ;;
-        2) DO_BUILD=0; DO_FETCH=1 ;;
-        3) DO_BUILD=1; DO_FETCH=1 ;;
-        4|5|6)
-            echo "--option $CHOICE is not supported in non-interactive mode."
-            exit 1
-            ;;
-        7)
-            echo "Current build profile: ${PROFILE}"
-            read -r -p "Switch profile? (y/n): " SWITCH
-            if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                case "$PROFILE" in
-                    server)  PROFILE="general" ;;
-                    general) PROFILE="slopmax" ;;
-                    slopmax) PROFILE="slopium" ;;
-                    slopium) PROFILE="server" ;;
-                esac
-                echo "Profile switched to: ${PROFILE}"
-            fi
-            exit 0
-            ;;
-        8)
-            echo "Current LTO flavor: $(lto_label)"
-            read -r -p "Switch LTO flavor? (y/n): " SWITCH
-            if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                case "$LTO_FLAVOR" in
-                    thin) LTO_FLAVOR="full" ;;
-                    full) LTO_FLAVOR="none" ;;
-                    none) LTO_FLAVOR="thin" ;;
-                esac
-                echo "LTO flavor switched to: $(lto_label)"
-            fi
-            exit 0
-            ;;
-        *)
-            echo "Invalid --option argument: $CHOICE"
-            exit 1
-            ;;
-    esac
-    SKIP_MENU=1
-else
-    SKIP_MENU=0
+if [[ $# -lt 2 || "$1" != "--option" ]]; then
+    echo "Usage: ./build.sh --option N [use=Profile] [lto=LTOFlavor] [jobs=N]"
+    echo "  N: 1=build  2=fetch firmware  3=both"
+    exit 1
 fi
 
-if [[ "$SKIP_MENU" == "0" ]]; then
-    while true; do
-        clear
-        echo -e "\e[1;35m╔══════════════════════════════════════════════════╗\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;37mPS4-Linux Strawberry Builder\e[0m                     \e[1;35m║\e[0m"
-        echo -e "\e[1;35m╠══════════════════════════════════════════════════╣\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m1)\e[0m Build bzImage                                 \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m2)\e[0m Fetch firmware blobs                          \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m3)\e[0m Both (fetch + build)                          \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m4)\e[0m Threads to use: \e[1;33m$(printf "%-29s" "${JOBS} / ${MAX_JOBS}")\e[0m \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;31m5)\e[0m Quit                                          \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m6)\e[0m Build profile: \e[1;33m${PROFILE}\e[0m$(printf "%-22s" "")\e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;36m7)\e[0m Show/switch build profile                      \e[1;35m║\e[0m"
-        echo -e "\e[1;35m║\e[0m \e[1;32m8)\e[0m Build LTO: \e[1;33m$(printf "%-31s" "$(lto_label)")\e[0m \e[1;35m║\e[0m"
-        echo -e "\e[1;35m╚══════════════════════════════════════════════════╝\e[0m"
-        echo ""
-        read -r -p "Select option [1-8]: " CHOICE
-
-        case "$CHOICE" in
-            1) DO_BUILD=1; DO_FETCH=0; break ;;
-            2) DO_BUILD=0; DO_FETCH=1; break ;;
-            3) DO_BUILD=1; DO_FETCH=1; break ;;
-            4)
-                read -r -p "Enter number of threads (1-${MAX_JOBS}): " NEW_JOBS
-                if [[ "$NEW_JOBS" =~ ^[0-9]+$ ]] && [[ "$NEW_JOBS" -ge 1 ]] && [[ "$NEW_JOBS" -le "$MAX_JOBS" ]]; then
-                    JOBS="$NEW_JOBS"
-                else
-                    echo -e "\e[1;31m[!] Invalid input.\e[0m Press enter to continue."
-                    read -r
-                fi
-                ;;
-            5)
-                echo "Exiting."
-                exit 0
-                ;;
-            6)
-                echo ""
-                echo "Select build profile:"
-                echo "  1) Server  (max throughput, headless)"
-                echo "  2) General (gaming/desktop latency)"
-                echo "  3) SlopMax (General + KVM support)"
-                echo "  4) Slopium (Server + KVM support)"
-                read -r -p "Profile [1-4]: " PROFILE_CHOICE
-                if [[ "$PROFILE_CHOICE" == "1" ]]; then
-                    PROFILE="server"
-                elif [[ "$PROFILE_CHOICE" == "2" ]]; then
-                    PROFILE="general"
-                elif [[ "$PROFILE_CHOICE" == "3" ]]; then
-                    PROFILE="slopmax"
-                elif [[ "$PROFILE_CHOICE" == "4" ]]; then
-                    PROFILE="slopium"
-                else
-                    echo -e "\e[1;31m[!] Invalid input.\e[0m Press enter to continue."
-                    read -r
-                fi
-                ;;
-            7)
-                echo ""
-                echo "Current build profile: ${PROFILE}"
-                read -r -p "Switch profile? (y/n): " SWITCH
-                if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                    case "$PROFILE" in
-                        server)  PROFILE="general" ;;
-                        general) PROFILE="slopmax" ;;
-                        slopmax) PROFILE="server" ;;
-                    esac
-                    echo "Profile switched to: ${PROFILE}"
-                    sleep 1
-                fi
-                ;;
-            8)
-                echo ""
-                echo "Current LTO flavor: $(lto_label)"
-                read -r -p "Switch LTO flavor? (y/n): " SWITCH
-                if [[ "$SWITCH" =~ ^[Yy]$ ]]; then
-                    case "$LTO_FLAVOR" in
-                        thin) LTO_FLAVOR="full" ;;
-                        full) LTO_FLAVOR="none" ;;
-                        none) LTO_FLAVOR="thin" ;;
-                    esac
-                    echo "LTO flavor switched to: $(lto_label)"
-                    sleep 1
-                fi
-                ;;
-            *)
-                echo -e "\e[1;31m[!] Invalid option.\e[0m"
-                sleep 1
-                ;;
-        esac
-    done
-fi
+CHOICE="$2"
+case "$CHOICE" in
+    1) DO_BUILD=1; DO_FETCH=0 ;;
+    2) DO_BUILD=0; DO_FETCH=1 ;;
+    3) DO_BUILD=1; DO_FETCH=1 ;;
+    *)
+        echo "Invalid --option argument: $CHOICE. Must be 1, 2, or 3."
+        exit 1
+        ;;
+esac
 
 MAKE_OPTS=(
     -j"${JOBS}"
@@ -404,168 +290,7 @@ if [[ "$DO_BUILD" == "1" ]]; then
     scripts/config --disable CONFIG_LOCALVERSION_AUTO
     scripts/config --set-str CONFIG_LOCALVERSION "${LOCALVERSION_SUFFIX}"
 
-    # Kernel compression
-    scripts/config --disable CONFIG_KERNEL_XZ
-    scripts/config --enable  CONFIG_KERNEL_ZSTD
-
-    # NUMA removal
-    scripts/config --disable CONFIG_NUMA
-    scripts/config --disable CONFIG_AMD_NUMA
-    scripts/config --disable CONFIG_X86_64_ACPI_NUMA
-    scripts/config --disable CONFIG_ACPI_NUMA
-    scripts/config --disable CONFIG_NUMA_MEMBLKS
-    scripts/config --disable CONFIG_NUMA_BALANCING
-
-    # Bare-metal PS4 target
-    scripts/config --disable CONFIG_HYPERVISOR_GUEST
-    scripts/config --disable CONFIG_PARAVIRT
-    scripts/config --disable CONFIG_PARAVIRT_XXL
-    scripts/config --disable CONFIG_KVM
-    scripts/config --disable CONFIG_KVM_AMD
-    scripts/config --disable CONFIG_KVM_INTEL
-
-    # PS4 firmware
-    scripts/config --enable  CONFIG_PS4_DMI_SPOOF
-
-    # Memory management / cgroup base
-    scripts/config --enable  CONFIG_CGROUPS
-    scripts/config --enable  CONFIG_MEMCG
-    scripts/config --enable  CONFIG_BLK_CGROUP
-    scripts/config --enable  CONFIG_CGROUP_WRITEBACK
-    scripts/config --enable  CONFIG_CGROUP_SCHED
-    scripts/config --enable  CONFIG_FAIR_GROUP_SCHED
-    scripts/config --disable CONFIG_RT_GROUP_SCHED
-    scripts/config --enable  CONFIG_CFS_BANDWIDTH
-    scripts/config --enable  CONFIG_CGROUP_PIDS
-    scripts/config --enable  CONFIG_LRU_GEN
-    scripts/config --enable  CONFIG_LRU_GEN_ENABLED
-    scripts/config --enable  CONFIG_LRU_GEN_STATS
-    scripts/config --enable  CONFIG_TRANSPARENT_HUGEPAGE
-    scripts/config --enable  CONFIG_SLUB_CPU_PARTIAL
-    scripts/config --enable  CONFIG_CGROUP_DMEM
-    scripts/config --enable  CONFIG_CGROUP_FREEZER
-    scripts/config --enable  CONFIG_CPUSETS
-    scripts/config --enable  CONFIG_CGROUP_DEVICE
-    scripts/config --enable  CONFIG_CGROUP_CPUACCT
-    scripts/config --enable  CONFIG_CGROUP_MISC
-    scripts/config --enable  CONFIG_CGROUP_BPF
-
-    # Namespace support needed by most cgroup/container userspace
-    scripts/config --enable  CONFIG_NAMESPACES
-    scripts/config --enable  CONFIG_UTS_NS
-    scripts/config --enable  CONFIG_TIME_NS
-    scripts/config --enable  CONFIG_IPC_NS
-    scripts/config --enable  CONFIG_USER_NS
-    scripts/config --enable  CONFIG_PID_NS
-    scripts/config --enable  CONFIG_NET_NS
-
-    scripts/config --disable CONFIG_ZSWAP_COMPRESSOR_DEFAULT_LZO
-    scripts/config --enable  CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD
-    scripts/config --set-str CONFIG_ZSWAP_COMPRESSOR_DEFAULT "zstd"
-    scripts/config --disable CONFIG_ZRAM_DEF_COMP_LZ4
-    scripts/config --enable  CONFIG_ZRAM_DEF_COMP_ZSTD
-    scripts/config --set-str CONFIG_ZRAM_DEF_COMP "zstd"
-    scripts/config --enable  CONFIG_ZSWAP
-    scripts/config --enable  CONFIG_ZRAM
-
-    # Async I/O
-    scripts/config --enable  CONFIG_IO_URING
-
-    # Network
-    scripts/config --enable  CONFIG_TCP_CONG_BBR
-    scripts/config --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
-    scripts/config --enable  CONFIG_NET_SCH_DEFAULT
-    scripts/config --enable  CONFIG_NET_SCH_FQ
-    scripts/config --enable  CONFIG_NET_SCH_FQ_CODEL
-    scripts/config --enable  CONFIG_NET_SCH_CAKE
-
-    # Crypto acceleration
-    scripts/config --enable  CONFIG_CRYPTO_AES_NI_INTEL
-    scripts/config --enable  CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL
-    scripts/config --enable  CONFIG_CRYPTO_POLYVAL_CLMUL_NI
-    scripts/config --enable  CONFIG_CRYPTO_LIB_SHA256
-
-    # Futex
-    scripts/config --enable  CONFIG_FUTEX
-    scripts/config --enable  CONFIG_FUTEX_PI
-    scripts/config --enable  CONFIG_FUTEX_PRIVATE_HASH
-    scripts/config --enable  CONFIG_FUTEX_MPOL
-
-    # NTSYNC
-    scripts/config --enable  CONFIG_NTSYNC
-
-    # Scheduler
-    scripts/config --enable  CONFIG_SCHED_CLASS_EXT
-    scripts/config --enable  CONFIG_SCHED_EXT
-    scripts/config --enable  CONFIG_SCHED_AUTOGROUP
-
-    # BPF
-    scripts/config --enable  CONFIG_BPF_SYSCALL
-    scripts/config --enable  CONFIG_BPF_JIT
-    scripts/config --enable  CONFIG_BPF_JIT_ALWAYS_ON
-    scripts/config --enable  CONFIG_BPF_JIT_DEFAULT_ON
-    scripts/config --disable CONFIG_BPF_UNPRIV_DEFAULT_OFF
-
-    # BTF / debug metadata
-    scripts/config --enable  CONFIG_DEBUG_INFO
-    scripts/config --enable  CONFIG_DEBUG_INFO_DWARF4
-    scripts/config --disable CONFIG_DEBUG_INFO_DWARF5
-    scripts/config --disable CONFIG_DEBUG_INFO_REDUCED
-    scripts/config --disable CONFIG_DEBUG_INFO_SPLIT
-    scripts/config --enable  CONFIG_DEBUG_INFO_BTF
-    scripts/config --enable  CONFIG_DEBUG_INFO_BTF_MODULES
-
-    # Runtime debug / tracing
-    scripts/config --disable CONFIG_DEBUG_KERNEL
-    scripts/config --disable CONFIG_PROVE_LOCKING
-    scripts/config --disable CONFIG_LOCKDEP
-    scripts/config --disable CONFIG_KASAN
-    scripts/config --disable CONFIG_FTRACE
-    scripts/config --disable CONFIG_SCHED_DEBUG
-    scripts/config --disable CONFIG_DEBUG_FS
-
-    # Mitigation / hardening trims
-    scripts/config --disable CONFIG_CPU_MITIGATIONS
-    scripts/config --disable CONFIG_STACKPROTECTOR
-    scripts/config --disable CONFIG_STACKPROTECTOR_STRONG
-    scripts/config --disable CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT
-    scripts/config --disable CONFIG_SLAB_FREELIST_HARDENED
-    scripts/config --disable CONFIG_SLAB_FREELIST_RANDOM
-    scripts/config --disable CONFIG_SHUFFLE_PAGE_ALLOCATOR
-    scripts/config --disable CONFIG_INIT_ON_ALLOC_DEFAULT_ON
-    scripts/config --disable CONFIG_INIT_ON_FREE_DEFAULT_ON
-    scripts/config --disable CONFIG_FORTIFY_SOURCE
-    scripts/config --disable CONFIG_HARDENED_USERCOPY
-    scripts/config --disable CONFIG_HARDENED_USERCOPY_DEFAULT_ON
-    scripts/config --disable CONFIG_SECURITY_DMESG_RESTRICT
-    scripts/config --disable CONFIG_IOMMU_DEFAULT_DMA_STRICT
-    scripts/config --enable  CONFIG_IOMMU_DEFAULT_DMA_LAZY
-
-    scripts/config --enable  CONFIG_IO_URING
-
-    # I/O schedulers
-    scripts/config --enable  CONFIG_MQ_IOSCHED_DEADLINE
-    scripts/config --enable  CONFIG_MQ_IOSCHED_KYBER
-    scripts/config --enable  CONFIG_IOSCHED_BFQ
-    scripts/config --enable  CONFIG_BFQ_GROUP_IOSCHED
-    scripts/config --enable  CONFIG_BLK_WBT
-    scripts/config --enable  CONFIG_BLK_WBT_MQ
-
-    # Swap/memory compression
-    scripts/config --disable CONFIG_ZSWAP_COMPRESSOR_DEFAULT_LZO
-    scripts/config --enable  CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD
-    scripts/config --set-str CONFIG_ZSWAP_COMPRESSOR_DEFAULT "zstd"
-    scripts/config --enable  CONFIG_ZRAM_DEF_COMP_ZSTD
-
-    # Strip debug overhead
-    scripts/config --disable CONFIG_DMADEVICES_DEBUG
-    scripts/config --disable CONFIG_DMADEVICES_VDEBUG
-    scripts/config --disable CONFIG_IOMMU_DEBUG
-    scripts/config --disable CONFIG_I2C_DEBUG_CORE
-    scripts/config --disable CONFIG_I2C_DEBUG_ALGO
-    scripts/config --disable CONFIG_I2C_DEBUG_BUS
-    scripts/config --disable CONFIG_DM_DEBUG
-    scripts/config --disable CONFIG_BLK_DEBUG_FS
+    apply_config_file "configs/base.cfg"
 
     if [[ "$PROFILE" == "server" || "$PROFILE" == "slopium" ]]; then
         echo -e "\e[1;34m[*]\e[0m Applying server profile..."
@@ -611,30 +336,5 @@ if [[ "$DO_BUILD" == "1" ]]; then
     ARTIFACT_BASENAME="${KVER_BASE}-Strawberry-${PROFILE_LABEL}-${LTO_LABEL}"
     printf '%s\n' "${ARTIFACT_BASENAME}" > "${OUTPUT_DIR}/artifact_name.txt"
 
-    echo ""
-    echo -e "\e[1;32m╔══════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;32m║\e[0m  Build complete! [${PROFILE} / ${LTO_LABEL}]$(printf "%-13s" "")\e[1;32m║\e[0m"
-    echo -e "\e[1;32m║\e[0m  Kernel : $(printf "%-39s" "${KVER}")\e[1;32m║\e[0m"
-    echo -e "\e[1;32m║\e[0m  bzImage: $(printf "%-39s" "${OUTPUT_DIR}/bzImage")\e[1;32m║\e[0m"
-    echo -e "\e[1;32m╚══════════════════════════════════════════════════╝\e[0m"
-    echo ""
-
-    if [[ "$PROFILE" == "general" || "$PROFILE" == "slopmax" ]]; then
-        echo "Kernel cmdline (add to your kexec invocation):"
-        echo "  isolcpus=2-7 nohz_full=2-7 rcu_nocbs=2-7 irqaffinity=0-1 threadirqs"
-        echo ""
-        echo "Post-boot sysctl (add to /etc/sysctl.d/99-ps4-gaming.conf):"
-        echo "  vm.swappiness = 10"
-        echo "  vm.dirty_ratio = 15"
-        echo "  vm.dirty_background_ratio = 5"
-        echo "  vm.compaction_proactiveness = 1"
-        echo ""
-        echo "Force GPU to max SCLK:"
-        echo "  echo manual > /sys/class/drm/card0/device/power_dpm_force_performance_level"
-        echo "  echo 2      > /sys/class/drm/card0/device/pp_dpm_sclk"
-        echo ""
-    fi
-
-    echo "Deploy to PS4:"
-    echo "  scp ${OUTPUT_DIR}/bzImage root@<ps4-ip>:/boot/bzImage"
+    echo -e "\e[1;32m[✓]\e[0m Build complete [${PROFILE} / ${LTO_LABEL}] -> ${OUTPUT_DIR}/bzImage (${KVER})"
 fi
