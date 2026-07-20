@@ -7,19 +7,21 @@
 struct ps4_bridge_monitor_quirk {
 	u16 manufacturer_name;
 	u16 product_code;
+	enum ps4_bridge_forced_mode forced_mode;
 };
 
 static const struct ps4_bridge_monitor_quirk ps4_bridge_monitor_quirks[] = {
-	{ 0x4a8b, 0x1366 },
+	{ 0x4a8b, 0x1366, PS4_BRIDGE_FORCED_MODE_1080P },
+	{ 0x5a63, 0x8a31, PS4_BRIDGE_FORCED_MODE_720P },
 };
 
-bool ps4_bridge_quirk_force_1080p(const struct edid *edid)
+enum ps4_bridge_forced_mode ps4_bridge_quirk_forced_mode(const struct edid *edid)
 {
 	u16 mfg, prod;
 	size_t i;
 
 	if (!edid)
-		return false;
+		return PS4_BRIDGE_FORCED_MODE_NONE;
 
 	mfg = be16_to_cpu(edid->product_id.manufacturer_name);
 	prod = le16_to_cpu(edid->product_id.product_code);
@@ -27,8 +29,8 @@ bool ps4_bridge_quirk_force_1080p(const struct edid *edid)
 	for (i = 0; i < ARRAY_SIZE(ps4_bridge_monitor_quirks); i++) {
 		if (ps4_bridge_monitor_quirks[i].manufacturer_name == mfg &&
 		    ps4_bridge_monitor_quirks[i].product_code == prod)
-			return true;
+			return ps4_bridge_monitor_quirks[i].forced_mode;
 	}
 
-	return false;
+	return PS4_BRIDGE_FORCED_MODE_NONE;
 }

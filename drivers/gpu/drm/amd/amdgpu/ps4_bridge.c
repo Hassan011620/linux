@@ -955,7 +955,7 @@ static void ps4_bridge_post_disable(struct drm_bridge *bridge)
 }
 
 /* 4 - 1280x720@60Hz */
-static const struct drm_display_mode mode_720p __maybe_unused = {
+static const struct drm_display_mode mode_720p = {
 	DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
 		 1430, 1650, 0, 720, 725, 730, 750, 0,
 		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
@@ -1105,16 +1105,24 @@ edid_ready:
 
 		raw_edid = drm_edid_raw(drm_edid);
 
-		if (ps4_bridge_quirk_force_1080p(raw_edid)) {
-			drm_info(dev, "ps4_bridge: EDID from %s is known-bad, forcing 1080p only\n",
-				 edid_source ? edid_source : "unknown");
-			drm_edid_free(drm_edid);
-			newmode = drm_mode_duplicate(dev, &mode_1080p);
-			if (newmode) {
-				drm_mode_probed_add(connector, newmode);
-				count++;
+		{
+			enum ps4_bridge_forced_mode forced = ps4_bridge_quirk_forced_mode(raw_edid);
+
+			if (forced != PS4_BRIDGE_FORCED_MODE_NONE) {
+				const struct drm_display_mode *quirk_mode =
+					forced == PS4_BRIDGE_FORCED_MODE_720P ? &mode_720p : &mode_1080p;
+
+				drm_info(dev, "ps4_bridge: EDID from %s is known-bad, forcing %s only\n",
+					 edid_source ? edid_source : "unknown",
+					 forced == PS4_BRIDGE_FORCED_MODE_720P ? "720p" : "1080p");
+				drm_edid_free(drm_edid);
+				newmode = drm_mode_duplicate(dev, quirk_mode);
+				if (newmode) {
+					drm_mode_probed_add(connector, newmode);
+					count++;
+				}
+				return count;
 			}
-			return count;
 		}
 
 		amdgpu_connector->edid = drm_edid_dup(drm_edid);
