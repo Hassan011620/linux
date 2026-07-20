@@ -105,6 +105,7 @@ jobs:
           name: ${{ steps.read-artifact.outputs.pkg_zip_name }}
           path: kernel-source-host/${{ steps.read-artifact.outputs.pkg_zip_name }}
           retention-days: 14
+          archive: false
 
       - name: "Notify: build failed"
         if: failure()
@@ -131,7 +132,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
