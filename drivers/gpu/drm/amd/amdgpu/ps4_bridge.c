@@ -53,6 +53,7 @@
 #include "atombios_dp.h"
 #include "atombios_encoders.h"
 #include "ObjectID.h"
+#include "ps4_bridge_quirks.h"
 
 #define CMD_READ	1, 1
 #define CMD_WRITE	2, 2
@@ -953,8 +954,6 @@ static void ps4_bridge_post_disable(struct drm_bridge *bridge)
 	mutex_unlock(&mn_bridge->mutex);
 }
 
-/* Fallback modes, only used when no EDID can be read at all. */
-
 /* 4 - 1280x720@60Hz */
 static const struct drm_display_mode mode_720p __maybe_unused = {
 	DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
@@ -1105,6 +1104,19 @@ edid_ready:
 		struct drm_display_mode *mode;
 
 		raw_edid = drm_edid_raw(drm_edid);
+
+		if (ps4_bridge_quirk_force_1080p(raw_edid)) {
+			drm_info(dev, "ps4_bridge: EDID from %s is known-bad, forcing 1080p only\n",
+				 edid_source ? edid_source : "unknown");
+			drm_edid_free(drm_edid);
+			newmode = drm_mode_duplicate(dev, &mode_1080p);
+			if (newmode) {
+				drm_mode_probed_add(connector, newmode);
+				count++;
+			}
+			return count;
+		}
+
 		amdgpu_connector->edid = drm_edid_dup(drm_edid);
 		drm_edid_connector_update(connector, drm_edid);
 		count = drm_edid_connector_add_modes(connector);
