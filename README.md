@@ -22,7 +22,7 @@
 |--------|--------|--------|-------|
 | [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-Stable) | Krait (PS4) | Aeolia / Belize | Current recommended |
 | [`aeolia-belize/7.0.8-mainline`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-mainline) | Krait (PS4) | Aeolia / Belize | PS4 bringup rewrite for upstream submission |
-| [`baikal/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/baikal/7.0.8-Stable) | Krait (PS4) | Baikal | Slim / Pro |
+| [`bikal-gae`](https://github.com/rmuxnet/linux/tree/bikal-gae) | Krait (PS4) | Baikal | Slim / Pro, current recommended |
 | [`pipa/7.1`](https://github.com/rmuxnet/linux/tree/pipa/7.1) | Taipan (Xiaomi Pad 6) | SM8250 | Upstream: PipaDB |
 | [`alioth/7.1`](https://github.com/rmuxnet/linux/tree/alioth/7.1) | Viper (POCO F3) | SM8250 | Upstream: PipaDB |
 
