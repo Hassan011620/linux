@@ -41,15 +41,19 @@ static const struct xhci_driver_overrides xhci_aeolia_overrides __initconst = {
 static void xhci_aeolia_quirks(struct device *dev, struct xhci_hcd *xhci)
 {
 	/*
-	 * Do not try to enable MSIs, we provide the MSIs ourselves
 	 * Do not touch DMA mask, we need a custom one
 	 */
-	xhci->quirks |= XHCI_PLAT | XHCI_PLAT_DMA;
+	xhci->quirks |= XHCI_PLAT_DMA;
 }
 
 /* called during probe() after chip reset completes */
 static int xhci_aeolia_setup(struct usb_hcd *hcd)
 {
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+
+	/* imod_interval is the interrupt moderation value in nanoseconds. */
+	xhci->imod_interval = 40000;
+
 	return xhci_gen_setup(hcd, xhci_aeolia_quirks);
 }
 
