@@ -40,7 +40,7 @@ static int ps4_cpufreq_target_index(struct cpufreq_policy *policy,
 	int i, cpu;
 
 	rdmsrq_on_cpu(policy->cpu, MSR_AMD_PSTATE_CUR_LIMIT, &val);
-	if (requested > (val & PSTATE_CURLIMIT_MASK))
+	if (requested < (val & PSTATE_CURLIMIT_MASK))
 		requested = val & PSTATE_CURLIMIT_MASK;
 
 	for_each_cpu(cpu, policy->cpus)
