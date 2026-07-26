@@ -3,7 +3,7 @@
 # PS4-Linux Strawberry Builder
 # Supports two PS4-focused build profiles and three LTO flavors:
 #   server   — headless/services, HZ=250, PREEMPT_VOLUNTARY, performance governor
-#   general  — desktop/gaming, HZ=250, PREEMPT=y, schedutil/reflex
+#   general  — desktop/gaming, HZ=250, PREEMPT=y, performance/reflex
 #   slopmax  — general + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
 #   slopium  — server + KVM (CONFIG_KVM/KVM_AMD) for running VMs on top
 #   NoLTO / ThinLTO / FullLTO selectable via lto=NoLTO, lto=ThinLTO, lto=FullLTO
