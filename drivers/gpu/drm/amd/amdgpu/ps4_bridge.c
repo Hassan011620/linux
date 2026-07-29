@@ -1223,6 +1223,23 @@ edid_ready:
 		amdgpu_connector->edid = drm_edid_dup(drm_edid);
 		drm_edid_connector_update(connector, drm_edid);
 		count = drm_edid_connector_add_modes(connector);
+
+		{
+			struct drm_display_mode *m, *first_1080p = NULL;
+
+			list_for_each_entry(m, &connector->probed_modes, head) {
+				if (m->vdisplay == 1080 &&
+				    drm_mode_vrefresh(m) == 60 &&
+				    !first_1080p)
+					first_1080p = m;
+			}
+			if (first_1080p) {
+				list_for_each_entry(m, &connector->probed_modes, head)
+					m->type &= ~DRM_MODE_TYPE_PREFERRED;
+				first_1080p->type |= DRM_MODE_TYPE_PREFERRED;
+			}
+		}
+
 		drm_info(dev, "ps4_bridge: EDID loaded from %s, %d modes, %u extension block(s)\n",
 			 edid_source ? edid_source : "unknown", count,
 			 raw_edid ? raw_edid->extensions : 0);
