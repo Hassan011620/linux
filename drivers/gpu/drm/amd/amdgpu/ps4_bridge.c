@@ -1228,7 +1228,9 @@ edid_ready:
 			struct drm_display_mode *m, *first_1080p = NULL;
 
 			list_for_each_entry(m, &connector->probed_modes, head) {
-				if (m->vdisplay == 1080 &&
+				if (m->hdisplay == 1920 &&
+				    m->vdisplay == 1080 &&
+				    !(m->flags & DRM_MODE_FLAG_INTERLACE) &&
 				    drm_mode_vrefresh(m) == 60 &&
 				    !first_1080p)
 					first_1080p = m;
