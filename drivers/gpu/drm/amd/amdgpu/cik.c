@@ -43,7 +43,6 @@
 #include "dce_v8_0.h"
 #include "gfx_v7_0.h"
 #include "cik_sdma.h"
-#include "liverpool_clk.h"
 #include "uvd_v4_2.h"
 #include "vce_v2_0.h"
 #include "cik_dpm.h"
@@ -2566,10 +2565,6 @@ static int cik_common_hw_init(struct amdgpu_ip_block *ip_block)
 		cik_program_aspm_ps4(adev);
 	else
 		cik_program_aspm(adev);
-
-	if (adev->asic_type == CHIP_LIVERPOOL ||
-	    adev->asic_type == CHIP_GLADIUS)
-		liverpool_clk_force_max(adev);
 
 	if (adev->asic_type == CHIP_LIVERPOOL) {
 		adev->clock.default_sclk = 80000;
