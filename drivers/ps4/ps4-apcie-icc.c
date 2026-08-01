@@ -395,15 +395,11 @@ void do_icc_init(void) {
 	u8 svc = 0x10;
 	u8 reply[0x30];
 	static const u8 led_config[] = {
-		3, 1, 0, 0,
-			0x10, 1, /* Blue: on */
-				2, 0xff, 2, 1, 0x00,
-			0x11, 1, /* White: off */
+		2, 1, 0, 0,
+			0x10, 1, /* Blue: off */
 				2, 0x00, 2, 1, 0x00,
-			0x02, 3, /* Orange: delay and pulse, loop forever */
-				1, 0x00, 4, 1, 0xbf,
-				2, 0xff, 5, 1, 0xff,
-				2, 0x00, 5, 1, 0xff,
+			0x11, 1, /* White: on */
+				2, 0xff, 2, 1, 0x00,
 	};
 	int ret;
 	// test: get FW version
@@ -431,6 +427,29 @@ void do_icc_init(void) {
 			 ret, reply[0], reply[1], reply[2], reply[3],
 			 reply[4], reply[5], reply[6], reply[7]);
 }
+
+static int __init ps4_led_boot_complete(void)
+{
+	static const u8 led_config[] = {
+		2, 1, 0, 0,
+			0x10, 1, /* Blue: on */
+				2, 0xff, 2, 1, 0x00,
+			0x11, 1, /* White: off */
+				2, 0x00, 2, 1, 0x00,
+	};
+	u8 reply[0x30];
+	int ret;
+
+	if (!icc_sc)
+		return 0;
+
+	ret = apcie_icc_cmd(9, 0x20, led_config, ARRAY_SIZE(led_config), reply, 0x30);
+	if (ret < 0)
+		pr_err("icc: boot-complete LED set failed: %d\n", ret);
+
+	return 0;
+}
+late_initcall(ps4_led_boot_complete);
 
 static void icc_shutdown(void)
 {
