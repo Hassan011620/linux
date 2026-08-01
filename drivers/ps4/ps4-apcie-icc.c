@@ -8,7 +8,6 @@
 #include <linux/uaccess.h>
 #include <asm/ps4.h>
 #include "aeolia.h"
-#include "icc/edid_test.h"
 
 /* There should normally be only one Aeolia device in a system. This allows
  * other kernel code in unrelated subsystems to issue icc requests without
@@ -638,9 +637,7 @@ int apcie_icc_init(struct apcie_dev *sc)
 		sc_err("icc: i2c init failed: %d\n", ret);
 		goto unassign_global;
 	}
-
-	icc_edid_dump_test(sc);
-
+	
 	resetBtWlan();
 //	resetUsbPort();
 	
