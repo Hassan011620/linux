@@ -128,6 +128,38 @@ validate_extra_firmware_blob() {
     fi
 }
 
+print_disclaimer() {
+    echo -e "\e[1;33mIf you want to contribute to this kernel: fork it and open a pull request.\e[0m"
+    echo -e "\e[1;33mDo not base a kernel off this one, dump it as a .patch repo, and call it your own work.\e[0m"
+}
+
+print_usage() {
+    echo "Usage: ./build.sh --option N [use=Profile] [lto=LTOFlavor] [jobs=N]"
+    echo "  N: 1=build  2=fetch firmware  3=both"
+    echo ""
+    echo "  use=Server/use=General/use=SlopMax/use=Slopium  (default: Server)"
+    echo "  lto=NoLTO/lto=ThinLTO/lto=FullLTO                (default: ThinLTO)"
+    echo "  jobs=N                                           (default: nproc)"
+    echo ""
+    echo "Examples:"
+    echo "  ./build.sh --option N use=Server"
+    echo "  ./build.sh --option N lto=ThinLTO"
+    echo "  ./build.sh --option N use=General lto=FullLTO jobs=8"
+    echo "  ./build.sh --option N use=SlopMax"
+    echo "  ./build.sh --option N use=Slopium"
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)
+            print_usage
+            echo ""
+            print_disclaimer
+            exit 0
+            ;;
+    esac
+done
+
 # Parse optional selectors in any position:
 #   use=Server/use=General/use=SlopMax/use=Slopium
 #   lto=NoLTO/lto=ThinLTO/lto=FullLTO
@@ -172,8 +204,7 @@ for arg in "$@"; do
 done
 
 if [[ $# -lt 2 || "$1" != "--option" ]]; then
-    echo "Usage: ./build.sh --option N [use=Profile] [lto=LTOFlavor] [jobs=N]"
-    echo "  N: 1=build  2=fetch firmware  3=both"
+    print_usage
     exit 1
 fi
 
@@ -280,6 +311,7 @@ if [[ "$DO_FETCH" == "1" ]]; then
 fi
 
 if [[ "$DO_BUILD" == "1" ]]; then
+    print_disclaimer
     echo -e "\e[1;34m[*]\e[0m Applying invariant config..."
 
     LOCALVERSION_SUFFIX="-Strawberry-$(profile_label)-$(lto_label)"
@@ -337,4 +369,6 @@ if [[ "$DO_BUILD" == "1" ]]; then
     printf '%s\n' "${ARTIFACT_BASENAME}" > "${OUTPUT_DIR}/artifact_name.txt"
 
     echo -e "\e[1;32m[✓]\e[0m Build complete [${PROFILE} / ${LTO_LABEL}] -> ${OUTPUT_DIR}/bzImage (${KVER})"
+    echo ""
+    print_disclaimer
 fi
