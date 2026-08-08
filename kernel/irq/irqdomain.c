@@ -539,7 +539,12 @@ struct irq_domain *irq_find_matching_fwspec(struct irq_fwspec *fwspec,
 	 */
 	mutex_lock(&irq_domain_mutex);
 	list_for_each_entry(h, &irq_domain_list, link) {
+#ifdef CONFIG_X86_PS4
+		extern bool ps4_is_baikal(void);
+		if (h->ops->select && (bus_token != DOMAIN_BUS_ANY || !ps4_is_baikal()))
+#else
 		if (h->ops->select)
+#endif
 			rc = h->ops->select(h, fwspec, bus_token);
 		else if (h->ops->match)
 			rc = h->ops->match(h, to_of_node(fwnode), bus_token);
