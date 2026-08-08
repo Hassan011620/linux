@@ -52,7 +52,7 @@ static int xhci_aeolia_setup(struct usb_hcd *hcd)
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
 	/* imod_interval is the interrupt moderation value in nanoseconds. */
-	xhci->imod_interval = 0;
+	xhci->imod_interval = 40000;
 
 	return xhci_gen_setup(hcd, xhci_aeolia_quirks);
 }

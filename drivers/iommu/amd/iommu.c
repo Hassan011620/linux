@@ -3148,6 +3148,17 @@ static int amd_iommu_def_domain_type(struct device *dev)
 	if (dev_is_pci(dev) && to_pci_dev(dev)->untrusted)
 		return IOMMU_DOMAIN_DMA;
 
+	#ifdef CONFIG_X86_PS4
+	if (dev_is_pci(dev)) {
+		struct pci_dev *pdev = to_pci_dev(dev);
+
+		if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+		    pdev->device >= PCI_DEVICE_ID_SONY_AEOLIA_ACPI &&
+		    pdev->device <= PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
+			return IOMMU_DOMAIN_IDENTITY;
+	}
+	#endif
+
 	/*
 	 * Do not identity map IOMMUv2 capable devices when:
 	 *  - memory encryption is active, because some of those devices
