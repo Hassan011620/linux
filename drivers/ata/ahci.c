@@ -1761,7 +1761,10 @@ static int ahci_init_irq(struct pci_dev *pdev, unsigned int n_ports,
 
 	#ifdef CONFIG_X86_PS4
 	if (pdev->vendor == PCI_VENDOR_ID_SONY) {
-		nvec = apcie_assign_irqs(pdev, n_ports);
+		if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI)
+			nvec = bpcie_assign_irqs(pdev, n_ports);
+		else
+			nvec = apcie_assign_irqs(pdev, n_ports);
 		if (nvec < 0)
 			return nvec;
 		hpriv->ps4_nvec = nvec;
@@ -1973,6 +1976,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	} else if (pdev->vendor == PCI_VENDOR_ID_LOONGSON) {
 		if (pdev->device == 0x7a08)
 			ahci_pci_bar = AHCI_PCI_BAR_LOONGSON;
+	} else if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+		   pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
+		ahci_pci_bar = 0;
 	}
 
 	/* acquire resources */
@@ -2026,6 +2032,18 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	hpriv->mmio = pcim_iomap(pdev, ahci_pci_bar, 0);
 	if (!hpriv->mmio)
 		return -ENOMEM;
+
+	#ifdef CONFIG_X86_PS4
+	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
+	    pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI) {
+		if (!ahci_baikal_shared_phy_seeded(pdev)) {
+			int rc = bpcie_baikal_sata_phy_init(pdev, hpriv->mmio);
+
+			if (rc)
+				return rc;
+		}
+	}
+	#endif
 
 	/* detect remapped nvme devices */
 	ahci_remap_check(pdev, ahci_pci_bar, hpriv);
@@ -2217,12 +2235,34 @@ static void ahci_remove_one(struct pci_dev *pdev)
 
 	#ifdef CONFIG_X86_PS4
 	if (pdev->vendor == PCI_VENDOR_ID_SONY && ps4_nvec > 0) {
-		apcie_free_irqs(pdev->irq, ps4_nvec);
+		if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_AHCI)
+			bpcie_free_irqs(pdev->irq, ps4_nvec);
+		else
+			apcie_free_irqs(pdev->irq, ps4_nvec);
 	}
 	#endif
 }
 
 #ifdef CONFIG_X86_PS4
+bool ahci_baikal_shared_phy_seeded(struct pci_dev *pdev)
+{
+	struct pci_dev *xhci;
+	bool seeded = false;
+
+	xhci = pci_get_slot(pdev->bus, (pdev->devfn & ~0x7) | 7);
+	if (!xhci)
+		return false;
+
+	if (xhci->vendor == PCI_VENDOR_ID_SONY &&
+	    xhci->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI &&
+	    xhci->dev.driver &&
+	    !strcmp(xhci->dev.driver->name, "xhci_aeolia"))
+		seeded = true;
+
+	pci_dev_put(xhci);
+	return seeded;
+}
+
 void bpcie_sata_phy_init(struct device *dev, struct ahci_controller *ctlr)
 {
 	int i;

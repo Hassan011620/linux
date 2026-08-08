@@ -344,7 +344,11 @@ static int aeolia_probe(struct sdhci_pci_chip *chip)
 
 static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
 {
-	int err = apcie_assign_irqs(slot->chip->pdev, 1);
+	int err;
+	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI)
+		err = bpcie_assign_irqs(slot->chip->pdev, 1);
+	else
+		err = apcie_assign_irqs(slot->chip->pdev, 1);
 	if (err <= 0) {
 		dev_err(&slot->chip->pdev->dev, "failed to get IRQ: %d\n", err);
 		return -ENODEV;
@@ -382,7 +386,10 @@ static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
 
 static void aeolia_remove_slot(struct sdhci_pci_slot *slot, int dead)
 {
-	apcie_free_irqs(slot->chip->pdev->irq, 1);
+	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI)
+		bpcie_free_irqs(slot->chip->pdev->irq, 1);
+	else
+		apcie_free_irqs(slot->chip->pdev->irq, 1);
 }
 
 static int aeolia_enable_dma(struct sdhci_pci_slot *slot)

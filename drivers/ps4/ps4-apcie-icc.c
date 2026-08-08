@@ -45,19 +45,6 @@ void icc_reboot(void);
 int apcie_icc_init(struct apcie_dev *sc);
 void apcie_icc_remove(struct apcie_dev *sc);
 
-#define ICC_IOCTL_TYPE	'I'
-
- struct icc_cmd {
- 	u8 major;
- 	u16 minor;
- 	void __user *data;
- 	u16 length;
- 	void __user *reply;
- 	u16 reply_length;
- };
-
-#define ICC_IOCTL_CMD _IOWR(ICC_IOCTL_TYPE, 1, struct icc_cmd)
-
 static u16 checksum(const void *p, int length)
 {
 	const u8 *pp = p;
@@ -302,6 +289,10 @@ int apcie_icc_cmd(u8 major, u16 minor, const void *data, u16 length,
 		   void *reply, u16 reply_length)
 {
 	int ret;
+
+	if (!icc_sc && bpcie_status() > 0)
+		return bpcie_icc_cmd(major, minor, data, length, reply,
+				     reply_length);
 
 	mutex_lock(&icc_mutex);
 	if (!icc_sc) {

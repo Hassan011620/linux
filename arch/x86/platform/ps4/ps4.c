@@ -30,6 +30,7 @@
 
 static bool is_ps4;
 bool apcie_initialized;
+bool bpcie_initialized;
 
 /*
  * The RTC is part of the Aeolia PCI device and will be implemented there as
@@ -52,9 +53,35 @@ int apcie_status(void)
 {
 	if (!is_ps4)
 		return -ENODEV;
-	return READ_ONCE(apcie_initialized);
+	return READ_ONCE(apcie_initialized) || READ_ONCE(bpcie_initialized);
 }
 EXPORT_SYMBOL_GPL(apcie_status);
+
+int bpcie_status(void)
+{
+	if (!is_ps4)
+		return -ENODEV;
+	return READ_ONCE(bpcie_initialized);
+}
+EXPORT_SYMBOL_GPL(bpcie_status);
+
+bool ps4_is_baikal(void)
+{
+	struct pci_dev *dev;
+	bool ret = false;
+
+	if (!is_ps4)
+		return false;
+
+	dev = pci_get_device(PCI_VENDOR_ID_SONY,
+			     PCI_DEVICE_ID_SONY_BAIKAL_ACPI, NULL);
+	if (dev) {
+		ret = true;
+		pci_dev_put(dev);
+	}
+	return ret;
+}
+EXPORT_SYMBOL_GPL(ps4_is_baikal);
 
 void icc_reboot(void);
 

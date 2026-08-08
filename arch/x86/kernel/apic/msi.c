@@ -31,6 +31,12 @@ static void irq_msi_update_msg(struct irq_data *irqd, struct irq_cfg *cfg)
 	irq_data_get_irq_chip(irqd)->irq_write_msi_msg(irqd, msg);
 }
 
+void irq_msi_compose_msg(struct irq_data *data, struct msi_msg *msg)
+{
+	__irq_msi_compose_msg(irqd_cfg(data), msg, false);
+}
+EXPORT_SYMBOL_GPL(irq_msi_compose_msg);
+
 static int
 msi_set_affinity(struct irq_data *irqd, const struct cpumask *mask, bool force)
 {

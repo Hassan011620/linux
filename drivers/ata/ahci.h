@@ -490,6 +490,8 @@ struct ahci_controller{
 };
 
 void bpcie_sata_phy_init(struct device *dev, struct ahci_controller *ctlr);
+int bpcie_baikal_sata_phy_init(struct pci_dev *pdev, void __iomem *ahci_mmio);
+bool ahci_baikal_shared_phy_seeded(struct pci_dev *pdev);
 
 static inline void bpcie_ahci_write(struct f_resource *r_mem, u32 offset, u32 val) {
 	iowrite32(val, r_mem->r_bushandle + offset);

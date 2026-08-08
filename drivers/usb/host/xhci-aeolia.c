@@ -52,7 +52,7 @@ static int xhci_aeolia_setup(struct usb_hcd *hcd)
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
 	/* imod_interval is the interrupt moderation value in nanoseconds. */
-	xhci->imod_interval = 40000;
+	xhci->imod_interval = 0;
 
 	return xhci_gen_setup(hcd, xhci_aeolia_quirks);
 }
@@ -223,20 +223,26 @@ static int ahci_init_one(struct pci_dev *pdev)
 		goto release_mem_region;
 	}
 
-	r_mem = kzalloc(sizeof(*r_mem), GFP_KERNEL);
-	if (r_mem) {
-		r_mem->r_bustag = 1;//mem
-		r_mem->r_bushandle = hpriv->mmio;
+	if (pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI) {
+		rc = bpcie_baikal_sata_phy_init(pdev, hpriv->mmio);
+		if (rc)
+			goto unmap_registers;
+	} else {
+		r_mem = kzalloc(sizeof(*r_mem), GFP_KERNEL);
+		if (r_mem) {
+			r_mem->r_bustag = 1;//mem
+			r_mem->r_bushandle = hpriv->mmio;
 
-		ctlr = kzalloc(sizeof(*ctlr), GFP_KERNEL);
-		if (ctlr) {
-			ctlr->r_mem = r_mem;
-			ctlr->dev_id = 0; //or 0x90ca104d;
-			ctlr->trace_len = 6;
-			bpcie_sata_phy_init(&pdev->dev, ctlr);
-			kfree(ctlr);
+			ctlr = kzalloc(sizeof(*ctlr), GFP_KERNEL);
+			if (ctlr) {
+				ctlr->r_mem = r_mem;
+				ctlr->dev_id = 0; //or 0x90ca104d;
+				ctlr->trace_len = 6;
+				bpcie_sata_phy_init(&pdev->dev, ctlr);
+				kfree(ctlr);
+			}
+			kfree(r_mem);
 		}
-		kfree(r_mem);
 	}
 	device_wakeup_enable(&pdev->dev);
 
@@ -398,7 +404,8 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
 	}
 	pci_set_drvdata(dev, axhci);
 
-	axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+	axhci->nr_irqs = retval = (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI) ?
+		bpcie_assign_irqs(dev, NR_DEVICES) : apcie_assign_irqs(dev, NR_DEVICES);
 	if (retval < 0) {
 		goto free_axhci;
 	}
@@ -430,6 +437,8 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
 		retval = xhci_aeolia_probe_one(dev, idx);
 		if (retval)
 			goto remove_hcds;
+		if (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
+			msleep(20);
 	}
 
 	return 0;
@@ -440,7 +449,10 @@ remove_hcds:
 	if (ahci_started)
 		ahci_remove_one(dev);
 free_irqs:
-	apcie_free_irqs(dev->irq, axhci->nr_irqs);
+	if (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
+		bpcie_free_irqs(dev->irq, axhci->nr_irqs);
+	else
+		apcie_free_irqs(dev->irq, axhci->nr_irqs);
 free_axhci:
 	pci_set_drvdata(dev, NULL);
 	kfree(axhci);
@@ -468,7 +480,10 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 			xhci_aeolia_remove_one(dev, idx);
 	}
 
-	apcie_free_irqs(dev->irq, axhci->nr_irqs);
+	if (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI)
+		bpcie_free_irqs(dev->irq, axhci->nr_irqs);
+	else
+		apcie_free_irqs(dev->irq, axhci->nr_irqs);
 
 	pci_set_drvdata(dev, NULL);
 	kfree(axhci);
