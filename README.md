@@ -20,11 +20,15 @@
 
 | Branch | Device | Target | Notes |
 |--------|--------|--------|-------|
-| [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-Stable) | Krait (PS4) | Aeolia / Belize | Current recommended |
-| [`aeolia-belize/7.0.8-mainline`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-mainline) | Krait (PS4) | Aeolia / Belize | PS4 bringup rewrite for upstream submission |
-| [`bikal-gae`](https://github.com/rmuxnet/linux/tree/bikal-gae) | Krait (PS4) | Baikal | Slim / Pro, current recommended |
-| [`pipa/7.1`](https://github.com/rmuxnet/linux/tree/pipa/7.1) | Taipan (Xiaomi Pad 6) | SM8250 | Upstream: PipaDB |
-| [`alioth/7.1`](https://github.com/rmuxnet/linux/tree/alioth/7.1) | Viper (POCO F3) | SM8250 | Upstream: PipaDB |
+| [`zaebiz/7.1.6-Stable`](https://github.com/rmuxnet/linux/tree/zaebiz/7.1.6-Stable) | Krait (PS4) | Aeolia / Belize | Current recommended |
+| [`zaebiz/7.1.3-Stable`](https://github.com/rmuxnet/linux/tree/zaebiz/7.1.3-Stable) | Krait (PS4) | Aeolia / Belize | Previous stable |
+| [`aeolia-belize/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/aeolia-belize/7.0.8-Stable) | Krait (PS4) | Aeolia / Belize | Legacy naming |
+| [`baikal/7.0.8-Stable`](https://github.com/rmuxnet/linux/tree/baikal/7.0.8-Stable) | Krait (PS4) | Baikal | Slim / Pro |
+| [`pipa/7.1.7`](https://github.com/rmuxnet/linux/tree/pipa/7.1.7) | Taipan (Xiaomi Pad 6) | SM8250 | Current |
+| [`pipa/7.1.2`](https://github.com/rmuxnet/linux/tree/pipa/7.1.2) | Taipan (Xiaomi Pad 6) | SM8250 | Previous |
+| [`alioth/7.1.7`](https://github.com/rmuxnet/linux/tree/alioth/7.1.7) | Viper (POCO F3) | SM8250 | Current |
+| [`alioth/7.1.2`](https://github.com/rmuxnet/linux/tree/alioth/7.1.2) | Viper (POCO F3) | SM8250 | Previous |
+| [`linux/7.1.7`](https://github.com/rmuxnet/linux/tree/linux/7.1.7) | — | — | Stock 7.1.7 base |
 
 For all branches see [BRANCHES.md](./BRANCHES.md).
 
@@ -68,7 +72,7 @@ The main difference between **General** and **Server** kernel profiles is availa
 ## Build
 
 ```bash
-git clone https://github.com/rmuxnet/linux --branch aeolia-belize/7.0.8-Stable --depth=3
+git clone https://github.com/rmuxnet/linux --branch zaebiz/7.1.6-Stable --depth=3
 cd linux
 
 # SD8797 firmware required if config requests it:
