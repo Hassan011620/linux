@@ -83,6 +83,9 @@ cd linux
 
 Output: `out/bzImage`, `out/.config`, `out/artifact_name.txt`.
 
+> If you want to contribute to this kernel: fork it and open a pull request.
+> Do not base a kernel off this one, dump it as a .patch repo, and call it your own work.
+
 ---
 
 ## Credits
