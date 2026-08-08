@@ -541,7 +541,8 @@ struct irq_domain *irq_find_matching_fwspec(struct irq_fwspec *fwspec,
 	list_for_each_entry(h, &irq_domain_list, link) {
 #ifdef CONFIG_X86_PS4
 		extern bool ps4_is_baikal(void);
-		if (h->ops->select && (bus_token != DOMAIN_BUS_ANY || !ps4_is_baikal()))
+		extern int ps4_is_baikal_early(void);
+		if (h->ops->select && (bus_token != DOMAIN_BUS_ANY || !ps4_is_baikal_early()))
 #else
 		if (h->ops->select)
 #endif

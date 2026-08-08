@@ -47,6 +47,7 @@ extern int bpcie_icc_cmd(u8 major, u16 minor, const void *data,
 			 u16 length, void *reply, u16 reply_length);
 
 extern bool ps4_is_baikal(void);
+extern int ps4_is_baikal_early(void);
 
 
 #else

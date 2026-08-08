@@ -83,6 +83,27 @@ bool ps4_is_baikal(void)
 }
 EXPORT_SYMBOL_GPL(ps4_is_baikal);
 
+static int ps4_baikal_cached = -1;
+
+int ps4_is_baikal_early(void)
+{
+	u32 id;
+	void *cfg;
+
+	if (!is_ps4)
+		return 0;
+
+	if (ps4_baikal_cached >= 0)
+		return ps4_baikal_cached;
+
+	cfg = phys_to_virt(0xf80a0000);
+	id = readl(cfg);
+
+	ps4_baikal_cached = ((id & 0xffff) == PCI_VENDOR_ID_SONY &&
+			     ((id >> 16) & 0xffff) == PCI_DEVICE_ID_SONY_BAIKAL_ACPI);
+	return ps4_baikal_cached;
+}
+
 void icc_reboot(void);
 
 /*
