@@ -43,6 +43,7 @@
 #include "dce_v8_0.h"
 #include "gfx_v7_0.h"
 #include "cik_sdma.h"
+#include "liverpool_smu.h"
 #include "uvd_v4_2.h"
 #include "vce_v2_0.h"
 #include "cik_dpm.h"
@@ -2573,6 +2574,10 @@ static int cik_common_hw_init(struct amdgpu_ip_block *ip_block)
 		adev->clock.default_sclk = 91100;
 		adev->clock.default_mclk = 170000;
 	}
+
+	if (adev->asic_type == CHIP_LIVERPOOL ||
+	    adev->asic_type == CHIP_GLADIUS)
+		liverpool_smu_sysfs_init(adev);
 
 	return 0;
 }
