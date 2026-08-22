@@ -818,11 +818,6 @@ static void ps4_bridge_enable(struct drm_bridge *bridge)
 		goto out;
 	}
 
-	if (pdev->vendor != PCI_VENDOR_ID_ATI) {
-		DRM_ERROR("Invalid vendor: %04x", pdev->vendor);
-		goto out;
-	}
-
 	DRM_DEBUG_KMS("ps4_bridge_enable (mode: %d)\n", mn_bridge->mode);
 
 	/* Here come the dragons */
